@@ -8,27 +8,27 @@
 
     const alarms = [];
     if (currentState.ecgLeadsOff) alarms.push('ECG leads off');
-    if (currentState.spo2ProbeOff) alarms.push('Sensor SpO2 desconectado');
-    if (currentState.tempProbeOff) alarms.push('Sonda TEMP desconectada');
-    if (currentState.spo2 < 90) alarms.push(`SpO2 baja (${currentState.spo2}%)`);
-    if (currentState.hr > 130) alarms.push(`Taquicardia (${currentState.hr} bpm)`);
-    if (currentState.hr < 45) alarms.push(`Bradicardia (${currentState.hr} bpm)`);
-    if (currentState.resp > 28) alarms.push(`Taquipnea (${currentState.resp} rpm)`);
-    if (currentState.resp < 8) alarms.push(`Bradipnea (${currentState.resp} rpm)`);
-    if (currentState.sys < 90) alarms.push(`Hipotensión (${currentState.sys}/${currentState.dia})`);
-    if (currentState.co2 > 50) alarms.push(`ETCO2 alto (${currentState.co2} mmHg)`);
-    if (currentState.co2 < 25 && currentState.resp > 20) alarms.push(`ETCO2 bajo (${currentState.co2} mmHg)`);
-    if (currentState.temp >= 39) alarms.push(`Temperatura alta (${currentState.temp.toFixed(1)} °C)`);
-    if (currentState.channel2Type === 'cvp' && currentState.cvp > 15) alarms.push(`CVP alta (${currentState.cvp} mmHg)`);
+    if (currentState.spo2ProbeOff) alarms.push('SpO2 sensor disconnected');
+    if (currentState.tempProbeOff) alarms.push('TEMP probe disconnected');
+    if (currentState.spo2 < 90) alarms.push(`Low SpO2 (${currentState.spo2}%)`);
+    if (currentState.hr > 130) alarms.push(`Tachycardia (${currentState.hr} bpm)`);
+    if (currentState.hr < 45) alarms.push(`Bradycardia (${currentState.hr} bpm)`);
+    if (currentState.resp > 28) alarms.push(`Tachypnea (${currentState.resp} rpm)`);
+    if (currentState.resp < 8) alarms.push(`Bradypnea (${currentState.resp} rpm)`);
+    if (currentState.sys < 90) alarms.push(`Hypotension (${currentState.sys}/${currentState.dia})`);
+    if (currentState.co2 > 50) alarms.push(`High ETCO2 (${currentState.co2} mmHg)`);
+    if (currentState.co2 < 25 && currentState.resp > 20) alarms.push(`Low ETCO2 (${currentState.co2} mmHg)`);
+    if (currentState.temp >= 39) alarms.push(`High temperature (${currentState.temp.toFixed(1)} °C)`);
+    if (currentState.channel2Type === 'cvp' && currentState.cvp > 15) alarms.push(`High CVP (${currentState.cvp} mmHg)`);
     if (currentState.channel2Type === 'icp' && currentState.cvp + 2 > 20) {
-      alarms.push(`ICP alta (${App.state.clamp(Math.round(currentState.cvp + 2), 0, 40)} mmHg)`);
+      alarms.push(`High ICP (${App.state.clamp(Math.round(currentState.cvp + 2), 0, 40)} mmHg)`);
     }
 
     return alarms;
   }
 
   function isCriticalAlarm(alarms) {
-    return alarms.some(alarm => alarm.includes('SpO2 baja') || alarm.includes('Hipotensión'));
+    return alarms.some(alarm => alarm.includes('Low SpO2') || alarm.includes('Hypotension'));
   }
 
   function getAlarmPriority(alarms) {
@@ -38,7 +38,7 @@
     if (isCriticalAlarm(alarms)) {
       return 'critical';
     }
-    const hasPhysiologicAlarm = alarms.some(alarm => !alarm.includes('desconect') && !alarm.includes('leads off'));
+    const hasPhysiologicAlarm = alarms.some(alarm => !alarm.includes('disconnected') && !alarm.includes('leads off'));
     return hasPhysiologicAlarm ? 'warning' : 'advisory';
   }
 

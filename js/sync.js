@@ -4,7 +4,7 @@
 
   function createSync({ pageType, onStateReceived, onStatusChange }) {
     if (!('BroadcastChannel' in window)) {
-      onStatusChange?.({ connected: false, message: 'BroadcastChannel no disponible' });
+      onStatusChange?.({ connected: false, message: 'BroadcastChannel unavailable' });
       return {
         broadcastState() {},
         dispose() {},
@@ -35,7 +35,7 @@
       }
 
       if (message.type === 'hello') {
-        setStatus(pageType === 'monitor' ? 'Control detectado' : 'Monitor detectado', true);
+        setStatus(pageType === 'monitor' ? 'Control detected' : 'Monitor detected', true);
         if (pageType === 'control') {
           post({ type: 'state:full', targetId: message.senderId, payload: App.state.getSerializableState() });
         }
@@ -50,7 +50,7 @@
       }
 
       if ((message.type === 'state:update' || message.type === 'state:full') && (!message.targetId || message.targetId === id)) {
-        setStatus(pageType === 'monitor' ? 'Sincronizado con control' : 'Estado sincronizado', true);
+        setStatus(pageType === 'monitor' ? 'Synchronized with control' : 'State synchronized', true);
         onStateReceived?.(message.payload || {});
       }
     };
@@ -60,7 +60,7 @@
         type: mode === 'full' ? 'state:full' : 'state:update',
         payload: App.state.getSerializableState()
       });
-      setStatus(pageType === 'control' ? 'Cambios enviados al monitor' : 'Estado local enviado', true);
+      setStatus(pageType === 'control' ? 'Changes sent to monitor' : 'Local state sent', true);
     }
 
     function requestState() {

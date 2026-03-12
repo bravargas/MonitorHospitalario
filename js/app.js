@@ -27,7 +27,7 @@
     const currentState = App.state.getState();
     indicator.classList.remove('connected', 'warning', 'danger', 'ok');
     if (currentState.activeAlarms.length === 0) {
-      indicator.textContent = 'Sin alarmas';
+      indicator.textContent = 'No alarms';
       indicator.classList.add('ok');
       return;
     }
@@ -86,7 +86,7 @@
       canvas.addEventListener('dblclick', toggleFullscreen);
     }
     audioManager = App.audio.createAudioManager({ enabled: true });
-    updateMonitorStatus('Esperando control…', 'warning');
+    updateMonitorStatus('Waiting for control...', 'warning');
   }
 
   syncManager = App.sync.createSync({

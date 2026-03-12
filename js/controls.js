@@ -103,7 +103,7 @@
 
         const startButton = document.getElementById('btnStart');
         if (startButton) {
-          startButton.textContent = nextState.running ? 'Pausar' : 'Iniciar';
+          startButton.textContent = nextState.running ? 'Pause' : 'Start';
           startButton.classList.toggle('active', nextState.running);
         }
 
@@ -146,7 +146,7 @@
         if (alarmBanner && alarmText) {
           if (nextState.activeAlarms.length === 0) {
             alarmBanner.style.display = 'none';
-            alarmText.textContent = 'Sin alarmas';
+            alarmText.textContent = 'No alarms';
             alarmBanner.classList.remove('advisory', 'danger');
           } else {
             alarmBanner.style.display = 'block';

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Control de paciente | Monitor hospitalario</title>
+  <title>Patient Controls | Hospital Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body data-page="control">
@@ -11,14 +11,14 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <h1 class="title">Controles del paciente</h1>
-          <p class="subtitle">Pantalla del profesor</p>
+          <h1 class="title">Patient Controls</h1>
+          <p class="subtitle">Instructor display</p>
         </div>
         <div class="page-actions">
-          <span id="syncStatus" class="status-pill warning">Esperando monitor</span>
-          <button id="btnStart" class="active">Pausar</button>
+          <span id="syncStatus" class="status-pill warning">Waiting for monitor</span>
+          <button id="btnStart" class="active">Pause</button>
           <button id="btnReset">Reset</button>
-          <button id="btnOpenMonitor">Abrir monitor</button>
+          <button id="btnOpenMonitor">Open monitor</button>
         </div>
       </div>
 
@@ -29,25 +29,25 @@
             <input id="showGrid" type="checkbox" checked />
           </div>
           <div class="toggle">
-            <span>Diagnóstico</span>
+            <span>Diagnostic</span>
             <input id="showDiagnostic" type="checkbox" checked />
           </div>
         </div>
 
         <div class="toggle-row">
           <div class="toggle">
-            <span>Alarmas</span>
+            <span>Alarms</span>
             <input id="alarmsEnabled" type="checkbox" checked />
           </div>
           <div class="toggle">
-            <span>Sonido</span>
+            <span>Sound</span>
             <input id="soundEnabled" type="checkbox" checked />
           </div>
         </div>
 
         <div class="control advisory-panel">
           <div class="control-top">
-            <label>Alarmas técnicas</label>
+            <label>Technical alarms</label>
             <div class="value-box">
               <span class="unit advisory-label">Advisory</span>
             </div>
@@ -58,11 +58,11 @@
               <input id="ecgLeadsOff" type="checkbox" />
             </label>
             <label class="toggle mini-toggle">
-              <span>Sensor SpO2 off</span>
+              <span>SpO2 sensor off</span>
               <input id="spo2ProbeOff" type="checkbox" />
             </label>
             <label class="toggle mini-toggle">
-              <span>Sonda TEMP off</span>
+              <span>TEMP probe off</span>
               <input id="tempProbeOff" type="checkbox" />
             </label>
           </div>
@@ -70,7 +70,7 @@
 
         <div class="control">
           <div class="control-top">
-            <label for="alarmVolume">Volumen de alarma</label>
+            <label for="alarmVolume">Alarm volume</label>
             <div class="value-box">
               <input id="alarmVolumeNumber" type="number" min="0" max="100" step="1" value="50" />
               <span class="unit">%</span>
@@ -81,32 +81,32 @@
 
         <div class="control">
           <div class="control-top">
-            <label for="channel2Type">Canal 2</label>
+            <label for="channel2Type">Channel 2</label>
             <div class="value-box">
               <select id="channel2Type">
                 <option value="cvp">CVP</option>
                 <option value="art2">ART2</option>
                 <option value="pap">PAP</option>
                 <option value="icp">ICP</option>
-                <option value="off">Desconectado</option>
+                <option value="off">Disconnected</option>
               </select>
             </div>
           </div>
         </div>
 
         <div class="quick">
-          <button data-profile="normal">Perfil normal</button>
-          <button data-profile="tachy">Taquicardia</button>
-          <button data-profile="brady">Bradicardia</button>
-          <button data-profile="hypoxia">Hipoxia</button>
+          <button data-profile="normal">Normal profile</button>
+          <button data-profile="tachy">Tachycardia</button>
+          <button data-profile="brady">Bradycardia</button>
+          <button data-profile="hypoxia">Hypoxia</button>
           <button data-profile="shock">Shock</button>
-          <button data-profile="sedation">Sedación</button>
+          <button data-profile="sedation">Sedation</button>
         </div>
 
         <div id="controls"></div>
 
         <div id="alarmBanner" class="note danger" style="display:none;">
-          <strong>Alarma activa:</strong> <span id="alarmText">Sin alarmas</span>
+          <strong>Active alarm:</strong> <span id="alarmText">No alarms</span>
         </div>
 
         <div class="metric-grid">
@@ -123,13 +123,13 @@
             <div class="num yellow small" id="mResp">14</div>
           </div>
           <div class="metric">
-            <div class="name orange">PA</div>
+            <div class="name orange">BP</div>
             <div class="num orange small" id="mBP">120/80</div>
           </div>
         </div>
 
         <div class="note">
-          El canal 2 puede emular CVP, ART2, PAP, ICP o quedar desconectado. Los cambios se envían al monitor del estudiante en tiempo real.
+          Channel 2 can emulate CVP, ART2, PAP, ICP, or stay disconnected. Changes are sent to the student monitor in real time.
         </div>
       </div>
     </div>

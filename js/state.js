@@ -3,14 +3,14 @@
 
   const CHANNEL2_TYPES = ['cvp', 'art2', 'pap', 'icp', 'off'];
   const CONTROL_CONFIG = [
-    { key: 'hr', label: 'Frecuencia cardíaca', min: 20, max: 220, step: 1, unit: 'bpm' },
-    { key: 'resp', label: 'Frecuencia respiratoria', min: 4, max: 45, step: 1, unit: 'rpm' },
+    { key: 'hr', label: 'Heart rate', min: 20, max: 220, step: 1, unit: 'bpm' },
+    { key: 'resp', label: 'Respiratory rate', min: 4, max: 45, step: 1, unit: 'rpm' },
     { key: 'spo2', label: 'SpO2', min: 50, max: 100, step: 1, unit: '%' },
     { key: 'co2', label: 'ETCO2', min: 0, max: 80, step: 1, unit: 'mmHg' },
-    { key: 'sys', label: 'Presión sistólica', min: 50, max: 240, step: 1, unit: 'mmHg' },
-    { key: 'dia', label: 'Presión diastólica', min: 20, max: 140, step: 1, unit: 'mmHg' },
-    { key: 'cvp', label: 'Valor canal 2', min: 0, max: 30, step: 1, unit: 'mmHg' },
-    { key: 'temp', label: 'Temperatura', min: 30, max: 42, step: 0.1, unit: '°C' }
+    { key: 'sys', label: 'Systolic pressure', min: 50, max: 240, step: 1, unit: 'mmHg' },
+    { key: 'dia', label: 'Diastolic pressure', min: 20, max: 140, step: 1, unit: 'mmHg' },
+    { key: 'cvp', label: 'Channel 2 value', min: 0, max: 30, step: 1, unit: 'mmHg' },
+    { key: 'temp', label: 'Temperature', min: 30, max: 42, step: 0.1, unit: '°C' }
   ];
 
   const PROFILES = {

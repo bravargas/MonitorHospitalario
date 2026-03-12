@@ -159,6 +159,11 @@
       ctx.restore();
     }
 
+    function formatSigned(value) {
+      const sign = value > 0 ? '+' : value < 0 ? '-' : '±';
+      return `${sign}${Math.abs(value).toFixed(1)}`;
+    }
+
     function drawSweepTrace(def, currentState) {
       const amplitude = typeof def.amplitude === 'function' ? def.amplitude(currentState) : def.amplitude;
       const buffer = buffers[def.key];
@@ -209,12 +214,14 @@
 
     function drawPanel(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
+      const st = App.state.getStMeasurements(currentState);
       const tempValue = currentState.temp.toFixed(1);
       const tempProbe2 = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
       const tempDelta = Math.abs(currentState.temp - tempProbe2).toFixed(1);
       const ecgValue = currentState.ecgLeadsOff ? '---' : String(currentState.hr);
       const spo2Value = currentState.spo2ProbeOff ? '---' : String(currentState.spo2);
       const showTempOff = currentState.tempProbeOff;
+      const diagnosticVisible = currentState.showDiagnostic;
       const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
       const heartPulse = heartAge <= 180 ? 1 - heartAge / 180 : 0;
       ctx.fillStyle = '#05070b';
@@ -241,9 +248,14 @@
       drawText('ECG', GRID_W + 14, 28, '#6eff6e', 18);
       drawText('bpm', GRID_W + 14, 46, '#6eff6e', 18);
       if (!currentState.ecgLeadsOff) {
-        drawHeartIcon(GRID_W + 36, 76, 10, heartPulse);
+        drawHeartIcon(GRID_W + 274, 26, 8, heartPulse);
       }
-      drawText(ecgValue, GRID_W + 230, 88, '#00ff33', currentState.ecgLeadsOff ? 72 : 96, 'right');
+      if (diagnosticVisible) {
+        drawText(`ST(I)  ${formatSigned(st.i)}`, GRID_W + 14, 64, '#7cff7c', 14);
+        drawText(`ST(II) ${formatSigned(st.ii)}`, GRID_W + 14, 80, '#7cff7c', 14);
+        drawText(`ST(V)  ${formatSigned(st.v)}`, GRID_W + 14, 96, '#7cff7c', 14);
+      }
+      drawText(ecgValue, GRID_W + 252, diagnosticVisible ? 96 : 88, '#00ff33', currentState.ecgLeadsOff ? 72 : diagnosticVisible ? 84 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
       drawText(String(currentState.resp), GRID_W + 90, 170, '#ffee00', 56);

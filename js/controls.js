@@ -73,6 +73,10 @@
       App.state.setState({ channel2Type: event.target.value }, { source: 'local' });
     });
 
+    document.getElementById('stProfile')?.addEventListener('change', event => {
+      App.state.setState({ stProfile: event.target.value }, { source: 'local' });
+    });
+
     const syncAlarmVolume = value => {
       const normalized = App.state.clamp(Number(value) || 0, 0, 100);
       App.state.setState({ alarmVolume: normalized / 100 }, { source: 'local' });
@@ -134,6 +138,9 @@
         });
         if (document.getElementById('channel2Type')) {
           document.getElementById('channel2Type').value = nextState.channel2Type;
+        }
+        if (document.getElementById('stProfile')) {
+          document.getElementById('stProfile').value = nextState.stProfile;
         }
 
         if (document.getElementById('mHr')) document.getElementById('mHr').textContent = nextState.hr;

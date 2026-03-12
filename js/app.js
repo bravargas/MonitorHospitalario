@@ -6,6 +6,7 @@
   let audioManager = null;
   let syncManager = null;
   let previousChannel2Type = App.state.getState().channel2Type;
+  let previousStProfile = App.state.getState().stProfile;
   let previousEcgLeadsOff = App.state.getState().ecgLeadsOff;
   let previousSpo2ProbeOff = App.state.getState().spo2ProbeOff;
 
@@ -56,6 +57,9 @@
     if (renderer && previousChannel2Type !== currentState.channel2Type) {
       renderer.clearTrace('channel2');
     }
+    if (renderer && previousStProfile !== currentState.stProfile) {
+      renderer.clearTrace('ecg');
+    }
     if (renderer && previousEcgLeadsOff !== currentState.ecgLeadsOff) {
       renderer.clearTrace('ecg');
     }
@@ -64,6 +68,7 @@
     }
 
     previousChannel2Type = currentState.channel2Type;
+    previousStProfile = currentState.stProfile;
     previousEcgLeadsOff = currentState.ecgLeadsOff;
     previousSpo2ProbeOff = currentState.spo2ProbeOff;
     refreshUi();

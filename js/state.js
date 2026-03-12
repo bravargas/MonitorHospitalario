@@ -14,12 +14,20 @@
   ];
 
   const PROFILES = {
-    normal: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10 },
-    tachy: { hr: 135, resp: 24, spo2: 97, co2: 35, sys: 110, dia: 70, temp: 37.4, cvp: 8 },
-    brady: { hr: 42, resp: 10, spo2: 98, co2: 40, sys: 100, dia: 60, temp: 36.5, cvp: 9 },
-    hypoxia: { hr: 118, resp: 30, spo2: 82, co2: 32, sys: 126, dia: 76, temp: 37.2, cvp: 10 },
-    shock: { hr: 145, resp: 32, spo2: 89, co2: 28, sys: 78, dia: 48, temp: 36.1, cvp: 4 },
-    sedation: { hr: 58, resp: 8, spo2: 95, co2: 47, sys: 108, dia: 68, temp: 36.7, cvp: 11 }
+    normal: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal' },
+    tachy: { hr: 135, resp: 24, spo2: 97, co2: 35, sys: 110, dia: 70, temp: 37.4, cvp: 8, stProfile: 'nonspecific' },
+    brady: { hr: 42, resp: 10, spo2: 98, co2: 40, sys: 100, dia: 60, temp: 36.5, cvp: 9, stProfile: 'normal' },
+    hypoxia: { hr: 118, resp: 30, spo2: 82, co2: 32, sys: 126, dia: 76, temp: 37.2, cvp: 10, stProfile: 'depression' },
+    shock: { hr: 145, resp: 32, spo2: 89, co2: 28, sys: 78, dia: 48, temp: 36.1, cvp: 4, stProfile: 'depression' },
+    sedation: { hr: 58, resp: 8, spo2: 95, co2: 47, sys: 108, dia: 68, temp: 36.7, cvp: 11, stProfile: 'normal' }
+  };
+
+  const ST_PROFILES = {
+    normal: { label: 'Normal ST', i: 0.0, ii: 0.0, v: 0.1 },
+    nonspecific: { label: 'Nonspecific changes', i: -0.1, ii: -0.1, v: 0.0 },
+    depression: { label: 'ST depression', i: -0.4, ii: -0.6, v: -0.5 },
+    inferiorElevation: { label: 'Inferior STE', i: -0.2, ii: 0.8, v: -0.1 },
+    anteriorElevation: { label: 'Anterior STE', i: 0.1, ii: 0.3, v: 1.2 }
   };
 
   const DEFAULT_STATE = {
@@ -37,6 +45,7 @@
     showGrid: true,
     showDiagnostic: true,
     channel2Type: 'cvp',
+    stProfile: 'normal',
     hr: 80,
     resp: 14,
     spo2: 99,
@@ -102,6 +111,10 @@
       patch.channel2Type = CHANNEL2_TYPES.includes(input.channel2Type) ? input.channel2Type : DEFAULT_STATE.channel2Type;
     }
 
+    if ('stProfile' in input) {
+      patch.stProfile = ST_PROFILES[input.stProfile] ? input.stProfile : DEFAULT_STATE.stProfile;
+    }
+
     return patch;
   }
 
@@ -152,6 +165,7 @@
       showGrid: state.showGrid,
       showDiagnostic: state.showDiagnostic,
       channel2Type: state.channel2Type,
+      stProfile: state.stProfile,
       hr: state.hr,
       resp: state.resp,
       spo2: state.spo2,
@@ -209,14 +223,21 @@
     return { label: 'CH2:Cvp', line1: 'CVP', line2: String(currentState.cvp), unit: 'mmHg' };
   }
 
+  function getStMeasurements(currentState = state) {
+    const key = ST_PROFILES[currentState.stProfile] ? currentState.stProfile : DEFAULT_STATE.stProfile;
+    return ST_PROFILES[key];
+  }
+
   App.state = {
     CHANNEL2_TYPES,
     CONTROL_CONFIG,
     DEFAULT_STATE,
     PROFILES,
+    ST_PROFILES,
     applyProfile,
     clamp,
     getChannel2Display,
+    getStMeasurements,
     getSerializableState,
     getState,
     mapPressureValue,

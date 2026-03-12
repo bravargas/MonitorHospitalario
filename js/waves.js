@@ -18,11 +18,14 @@
     const beatPeriod = safePeriod(currentState.hr, 20);
     const p = phase01(time, beatPeriod);
     const baseline = Math.sin(time * 1.7) * 0.01;
+    const st = App.state.getStMeasurements(currentState);
+    const stSegment = gaussian(p, 0.52, 0.038, st.ii * 0.18) + gaussian(p, 0.60, 0.050, st.ii * 0.13);
     return baseline
       + gaussian(p, 0.18, 0.028, 0.12)
       - gaussian(p, 0.39, 0.010, 0.16)
       + gaussian(p, 0.405, 0.006, 1.08)
       - gaussian(p, 0.43, 0.012, 0.22)
+      + stSegment
       + gaussian(p, 0.68, 0.060, 0.26);
   }
 

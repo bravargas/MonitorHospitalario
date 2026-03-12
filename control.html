@@ -109,6 +109,41 @@
           </div>
         </div>
 
+        <div class="control">
+          <div class="control-top">
+            <label for="patientName">Patient name</label>
+            <div class="value-box">
+              <input id="patientName" type="text" maxlength="24" placeholder="No name" value="" />
+            </div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-top">
+            <label for="ecgGain">ECG gain</label>
+            <div class="value-box">
+              <select id="ecgGain">
+                <option value="0.5">x0.5</option>
+                <option value="1">x1</option>
+                <option value="2">x2</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-top">
+            <label for="ecgSweepSpeed">ECG sweep speed</label>
+            <div class="value-box">
+              <select id="ecgSweepSpeed">
+                <option value="12.5">12.5 mm/s</option>
+                <option value="25">25 mm/s</option>
+                <option value="50">50 mm/s</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div class="quick">
           <button data-profile="normal">Normal profile</button>
           <button data-profile="tachy">Tachycardia</button>

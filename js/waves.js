@@ -22,15 +22,19 @@
     const leadShape = {
       ii: { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 },
       i: { stValue: st.i, pAmp: 0.09, qAmp: 0.12, rAmp: 0.82, sAmp: 0.18, tAmp: 0.18, invert: 1 },
-      v: { stValue: st.v, pAmp: 0.06, qAmp: 0.10, rAmp: 0.55, sAmp: 0.42, tAmp: 0.12, invert: -1 }
+      v: { stValue: st.v, pAmp: 0.05, qAmp: 0.08, rAmp: 0.28, sAmp: 0.72, tAmp: 0.10, invert: 1 }
     }[lead] || { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 };
     const stSegment = gaussian(p, 0.52, 0.038, leadShape.stValue * 0.18) + gaussian(p, 0.60, 0.050, leadShape.stValue * 0.13);
+    const vTail = lead === 'v'
+      ? -gaussian(p, 0.445, 0.016, 0.18) + gaussian(p, 0.70, 0.055, leadShape.stValue * 0.05)
+      : 0;
     return baseline
       + gaussian(p, 0.18, 0.028, leadShape.pAmp * leadShape.invert)
       - gaussian(p, 0.39, 0.010, leadShape.qAmp * leadShape.invert)
       + gaussian(p, 0.405, 0.006, leadShape.rAmp * leadShape.invert)
       - gaussian(p, 0.43, 0.012, leadShape.sAmp * leadShape.invert)
       + stSegment
+      + vTail
       + gaussian(p, 0.68, 0.060, leadShape.tAmp * leadShape.invert);
   }
 
@@ -133,7 +137,7 @@
     if (currentState.channel2Type === 'art2') return 26;
     if (currentState.channel2Type === 'icp') return 14;
     if (currentState.channel2Type === 'off') return 3;
-    return 16;
+    return 26;
   }
 
   App.waves = {

@@ -2,6 +2,8 @@
   const App = (window.MonitorApp = window.MonitorApp || {});
 
   const CHANNEL2_TYPES = ['cvp', 'art2', 'pap', 'icp', 'off'];
+  const ECG_GAINS = [0.5, 1, 2];
+  const ECG_SWEEP_SPEEDS = [12.5, 25, 50];
   const CONTROL_CONFIG = [
     { key: 'hr', label: 'Heart rate', min: 20, max: 220, step: 1, unit: 'bpm' },
     { key: 'resp', label: 'Respiratory rate', min: 4, max: 45, step: 1, unit: 'rpm' },
@@ -46,6 +48,9 @@
     showDiagnostic: true,
     channel2Type: 'cvp',
     stProfile: 'normal',
+    patientName: '',
+    ecgGain: 1,
+    ecgSweepSpeed: 25,
     hr: 80,
     resp: 14,
     spo2: 99,
@@ -115,6 +120,20 @@
       patch.stProfile = ST_PROFILES[input.stProfile] ? input.stProfile : DEFAULT_STATE.stProfile;
     }
 
+    if ('patientName' in input) {
+      patch.patientName = String(input.patientName || '').trim().slice(0, 24);
+    }
+
+    if ('ecgGain' in input) {
+      const raw = Number(input.ecgGain);
+      patch.ecgGain = ECG_GAINS.includes(raw) ? raw : DEFAULT_STATE.ecgGain;
+    }
+
+    if ('ecgSweepSpeed' in input) {
+      const raw = Number(input.ecgSweepSpeed);
+      patch.ecgSweepSpeed = ECG_SWEEP_SPEEDS.includes(raw) ? raw : DEFAULT_STATE.ecgSweepSpeed;
+    }
+
     return patch;
   }
 
@@ -166,6 +185,9 @@
       showDiagnostic: state.showDiagnostic,
       channel2Type: state.channel2Type,
       stProfile: state.stProfile,
+      patientName: state.patientName,
+      ecgGain: state.ecgGain,
+      ecgSweepSpeed: state.ecgSweepSpeed,
       hr: state.hr,
       resp: state.resp,
       spo2: state.spo2,
@@ -232,6 +254,8 @@
     CHANNEL2_TYPES,
     CONTROL_CONFIG,
     DEFAULT_STATE,
+    ECG_GAINS,
+    ECG_SWEEP_SPEEDS,
     PROFILES,
     ST_PROFILES,
     applyProfile,

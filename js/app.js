@@ -7,6 +7,8 @@
   let syncManager = null;
   let previousChannel2Type = App.state.getState().channel2Type;
   let previousStProfile = App.state.getState().stProfile;
+  let previousEcgGain = App.state.getState().ecgGain;
+  let previousEcgSweepSpeed = App.state.getState().ecgSweepSpeed;
   let previousEcgLeadsOff = App.state.getState().ecgLeadsOff;
   let previousSpo2ProbeOff = App.state.getState().spo2ProbeOff;
 
@@ -66,6 +68,12 @@
     if (renderer && previousStProfile !== currentState.stProfile) {
       clearEcgTraces();
     }
+    if (renderer && previousEcgGain !== currentState.ecgGain) {
+      clearEcgTraces();
+    }
+    if (renderer && previousEcgSweepSpeed !== currentState.ecgSweepSpeed) {
+      clearEcgTraces();
+    }
     if (renderer && previousEcgLeadsOff !== currentState.ecgLeadsOff) {
       clearEcgTraces();
     }
@@ -75,6 +83,8 @@
 
     previousChannel2Type = currentState.channel2Type;
     previousStProfile = currentState.stProfile;
+    previousEcgGain = currentState.ecgGain;
+    previousEcgSweepSpeed = currentState.ecgSweepSpeed;
     previousEcgLeadsOff = currentState.ecgLeadsOff;
     previousSpo2ProbeOff = currentState.spo2ProbeOff;
     refreshUi();

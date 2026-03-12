@@ -21,22 +21,23 @@
     const PANEL_W = 300;
     const GRID_W = W - PANEL_W;
     const ROWS = 6;
-    const ROW_H = H / ROWS;
+    const HEADER_H = 36;
+    const GRID_H = H - HEADER_H;
+    const ROW_H = GRID_H / ROWS;
     const SWEEP_DURATION = 6;
     const ERASE_WIDTH = 18;
-    const COLUMN_SPEED = GRID_W / SWEEP_DURATION;
 
     const traceDefs = [
-      { key: 'ecgLeadII', wave: 'ecg-ii', color: '#00ff33', yBase: ROW_H * 0.58, amplitude: 38, noise: 0 },
-      { key: 'ecgLeadI', wave: 'ecg-i', color: '#00ff33', yBase: ROW_H * 1.58, amplitude: 34, noise: 0 },
-      { key: 'ecgLeadV', wave: 'ecg-v', color: '#00ff33', yBase: ROW_H * 2.58, amplitude: 32, noise: 0 },
-      { key: 'pleth', wave: 'pleth', color: '#00e5ff', yBase: ROW_H * 3.58, amplitude: 46, noise: 0.01 },
-      { key: 'co2', wave: 'co2', color: '#ff63ff', yBase: ROW_H * 4.58, amplitude: 30, noise: 0.004 },
+      { key: 'ecgLeadII', wave: 'ecg-ii', color: '#00ff33', yBase: HEADER_H + ROW_H * 0.58, amplitude: currentState => 38 * currentState.ecgGain, noise: 0 },
+      { key: 'ecgLeadI', wave: 'ecg-i', color: '#00ff33', yBase: HEADER_H + ROW_H * 1.58, amplitude: currentState => 34 * currentState.ecgGain, noise: 0 },
+      { key: 'ecgLeadV', wave: 'ecg-v', color: '#00ff33', yBase: HEADER_H + ROW_H * 2.58, amplitude: currentState => 32 * currentState.ecgGain, noise: 0 },
+      { key: 'pleth', wave: 'pleth', color: '#00e5ff', yBase: HEADER_H + ROW_H * 3.58, amplitude: 46, noise: 0.01 },
+      { key: 'co2', wave: 'co2', color: '#ff63ff', yBase: HEADER_H + ROW_H * 4.58, amplitude: 30, noise: 0.004 },
       {
         key: 'channel2',
         wave: currentState => App.waves.getChannel2Wave(currentState),
         color: '#ff4d00',
-        yBase: ROW_H * 5.58,
+        yBase: HEADER_H + ROW_H * 5.42,
         amplitude: currentState => App.waves.getChannel2Amplitude(currentState),
         noise: 0.006
       }
@@ -61,13 +62,14 @@
 
     function advanceBuffers(dt) {
       const currentState = App.state.getState();
+      const columnSpeed = (GRID_W / SWEEP_DURATION) * (currentState.ecgSweepSpeed / 25);
       if (!currentState.running) {
         return;
       }
 
       const previousSweepX = sweepX;
       signalTime += dt;
-      sweepX = (sweepX + COLUMN_SPEED * dt) % GRID_W;
+      sweepX = (sweepX + columnSpeed * dt) % GRID_W;
 
       let columnsAdvanced = Math.floor(sweepX) - Math.floor(previousSweepX);
       if (sweepX < previousSweepX) {
@@ -104,17 +106,29 @@
       for (let i = 0; i <= 18; i += 1) {
         const x = (GRID_W / 18) * i;
         ctx.beginPath();
-        ctx.moveTo(x, 0);
+        ctx.moveTo(x, HEADER_H);
         ctx.lineTo(x, H);
         ctx.stroke();
       }
       for (let i = 0; i <= 24; i += 1) {
-        const y = (H / 24) * i;
+        const y = HEADER_H + (GRID_H / 24) * i;
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(GRID_W, y);
         ctx.stroke();
       }
+      ctx.restore();
+    }
+
+    function drawHeaderBand() {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
+      ctx.fillRect(0, 0, GRID_W, HEADER_H);
+      ctx.strokeStyle = 'rgba(20, 55, 168, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(0, HEADER_H + 0.5);
+      ctx.lineTo(GRID_W, HEADER_H + 0.5);
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -157,6 +171,28 @@
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+    }
+
+    function drawMonitorHeader(currentState) {
+      const now = new Date();
+      const hasPatientName = Boolean(currentState.patientName);
+      const patientName = hasPatientName ? currentState.patientName : 'No name';
+      const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      drawText('MANUAL', 18, 18, '#8cff8c', 14);
+      drawText(`x${currentState.ecgGain}`, 108, 18, '#8cff8c', 14);
+      drawText('MON', 152, 18, '#8cff8c', 14);
+      drawText(patientName, 218, 18, hasPatientName ? '#73e0ff' : 'rgba(115, 224, 255, 0.42)', 14);
+      drawText('ADULT', GRID_W - 286, 18, '#df84ff', 14);
+      drawText(stamp, GRID_W - 92, 18, '#f5f5f5', 12, 'right');
+      drawText(`${currentState.ecgSweepSpeed} mm/s`, GRID_W - 12, 18, '#f5f5f5', 14, 'right');
+    }
+
+    function drawRightEdgeReferences() {
+      const rightX = GRID_W - 8;
+      drawText('130', rightX, HEADER_H + 16, '#7cff7c', 13, 'right');
+      drawText('45', rightX, HEADER_H + ROW_H - 8, '#7cff7c', 13, 'right');
+      drawText('90', rightX, HEADER_H + ROW_H * 3 + 16, '#00e5ff', 13, 'right');
+      drawText('85', rightX, HEADER_H + ROW_H * 4 - 8, '#ff5252', 13, 'right');
     }
 
     function formatSigned(value) {
@@ -258,7 +294,7 @@
       drawText(ecgValue, GRID_W + 252, diagnosticVisible ? 96 : 88, '#00ff33', currentState.ecgLeadsOff ? 72 : diagnosticVisible ? 84 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
-      drawText(String(currentState.resp), GRID_W + 90, 170, '#ffee00', 56);
+      drawText(String(currentState.resp), GRID_W + 82, 170, '#ffee00', 56);
 
       drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
       drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
@@ -270,7 +306,7 @@
       drawText(showTempOff ? '--' : tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
 
       drawText('SpO2', GRID_W + 14, 206, '#00e5ff', 18);
-      drawText(spo2Value, GRID_W + 90, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
+      drawText(spo2Value, GRID_W + 82, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
       drawText('%', GRID_W + 258, 206, '#00e5ff', 18);
       for (let i = 0; i < 6; i += 1) {
         ctx.fillStyle = currentState.spo2ProbeOff
@@ -282,7 +318,7 @@
       }
 
       drawText('CO2', GRID_W + 14, 296, '#ff63ff', 18);
-      drawText(String(currentState.co2), GRID_W + 92, 338, '#ff63ff', 56);
+  drawText(String(currentState.co2), GRID_W + 84, 338, '#ff63ff', 56);
       drawText('mmHg', GRID_W + 212, 296, '#ff63ff', 18);
 
       drawText('IBP (1,2)', GRID_W + 14, 386, '#ff4d00', 18);
@@ -304,15 +340,15 @@
 
     function drawLabels(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
-      drawLabel('II', 14, 24, '#00ff33', 18);
+      drawLabel('II', 14, HEADER_H + 22, '#00ff33', 18);
       if (currentState.showDiagnostic) {
-        drawLabel('Diagnostic', 150, 24, '#7cff7c', 18);
+        drawLabel('Diagnostic', 360, HEADER_H + 22, '#7cff7c', 17);
       }
-      drawLabel('I', 14, ROW_H + 22, '#00ff33', 18);
-      drawLabel('V', 14, ROW_H * 2 + 22, '#00ff33', 18);
-      drawLabel('Pleth', 14, ROW_H * 3 + 22, '#00e5ff', 18);
-      drawLabel('CO2', 14, ROW_H * 4 + 22, '#ff63ff', 18);
-      drawLabel(channel2.label, 14, ROW_H * 5 + 22, '#ff4d00', 18);
+      drawLabel('I', 14, HEADER_H + ROW_H + 22, '#00ff33', 18);
+      drawLabel('V', 14, HEADER_H + ROW_H * 2 + 22, '#00ff33', 18);
+      drawLabel('Pleth', 14, HEADER_H + ROW_H * 3 + 22, '#00e5ff', 18);
+      drawLabel('CO2', 14, HEADER_H + ROW_H * 4 + 22, '#ff63ff', 18);
+      drawLabel(channel2.label, 14, HEADER_H + ROW_H * 5 + 22, '#ff4d00', 18);
     }
 
     function renderFrame(dt) {
@@ -328,6 +364,9 @@
       }
       traceDefs.forEach(def => drawSweepTrace(def, currentState));
       drawSweepHead();
+      drawHeaderBand();
+      drawMonitorHeader(currentState);
+      drawRightEdgeReferences();
       drawLabels(currentState);
       drawPanel(currentState);
 

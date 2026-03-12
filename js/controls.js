@@ -77,6 +77,18 @@
       App.state.setState({ stProfile: event.target.value }, { source: 'local' });
     });
 
+    document.getElementById('patientName')?.addEventListener('input', event => {
+      App.state.setState({ patientName: event.target.value }, { source: 'local' });
+    });
+
+    document.getElementById('ecgGain')?.addEventListener('change', event => {
+      App.state.setState({ ecgGain: Number(event.target.value) }, { source: 'local' });
+    });
+
+    document.getElementById('ecgSweepSpeed')?.addEventListener('change', event => {
+      App.state.setState({ ecgSweepSpeed: Number(event.target.value) }, { source: 'local' });
+    });
+
     const syncAlarmVolume = value => {
       const normalized = App.state.clamp(Number(value) || 0, 0, 100);
       App.state.setState({ alarmVolume: normalized / 100 }, { source: 'local' });
@@ -141,6 +153,15 @@
         }
         if (document.getElementById('stProfile')) {
           document.getElementById('stProfile').value = nextState.stProfile;
+        }
+        if (document.getElementById('patientName')) {
+          document.getElementById('patientName').value = nextState.patientName;
+        }
+        if (document.getElementById('ecgGain')) {
+          document.getElementById('ecgGain').value = String(nextState.ecgGain);
+        }
+        if (document.getElementById('ecgSweepSpeed')) {
+          document.getElementById('ecgSweepSpeed').value = String(nextState.ecgSweepSpeed);
         }
 
         if (document.getElementById('mHr')) document.getElementById('mHr').textContent = nextState.hr;

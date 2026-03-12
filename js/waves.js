@@ -14,19 +14,28 @@
     return Math.exp(-Math.pow(x - center, 2) / (2 * width * width)) * amplitude;
   }
 
-  function sampleEcg(currentState, time) {
+  function sampleEcgLead(currentState, time, lead) {
     const beatPeriod = safePeriod(currentState.hr, 20);
     const p = phase01(time, beatPeriod);
     const baseline = Math.sin(time * 1.7) * 0.01;
     const st = App.state.getStMeasurements(currentState);
-    const stSegment = gaussian(p, 0.52, 0.038, st.ii * 0.18) + gaussian(p, 0.60, 0.050, st.ii * 0.13);
+    const leadShape = {
+      ii: { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 },
+      i: { stValue: st.i, pAmp: 0.09, qAmp: 0.12, rAmp: 0.82, sAmp: 0.18, tAmp: 0.18, invert: 1 },
+      v: { stValue: st.v, pAmp: 0.06, qAmp: 0.10, rAmp: 0.55, sAmp: 0.42, tAmp: 0.12, invert: -1 }
+    }[lead] || { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 };
+    const stSegment = gaussian(p, 0.52, 0.038, leadShape.stValue * 0.18) + gaussian(p, 0.60, 0.050, leadShape.stValue * 0.13);
     return baseline
-      + gaussian(p, 0.18, 0.028, 0.12)
-      - gaussian(p, 0.39, 0.010, 0.16)
-      + gaussian(p, 0.405, 0.006, 1.08)
-      - gaussian(p, 0.43, 0.012, 0.22)
+      + gaussian(p, 0.18, 0.028, leadShape.pAmp * leadShape.invert)
+      - gaussian(p, 0.39, 0.010, leadShape.qAmp * leadShape.invert)
+      + gaussian(p, 0.405, 0.006, leadShape.rAmp * leadShape.invert)
+      - gaussian(p, 0.43, 0.012, leadShape.sAmp * leadShape.invert)
       + stSegment
-      + gaussian(p, 0.68, 0.060, 0.26);
+      + gaussian(p, 0.68, 0.060, leadShape.tAmp * leadShape.invert);
+  }
+
+  function sampleEcg(currentState, time) {
+    return sampleEcgLead(currentState, time, 'ii');
   }
 
   function sampleResp(currentState, time) {
@@ -95,9 +104,12 @@
   }
 
   function sample(type, currentState, time) {
-    if (type === 'ecg' && currentState.ecgLeadsOff) return sampleFlat();
+    if ((type === 'ecg' || type === 'ecg-i' || type === 'ecg-ii' || type === 'ecg-v') && currentState.ecgLeadsOff) return sampleFlat();
     if (type === 'pleth' && currentState.spo2ProbeOff) return sampleFlat();
     if (type === 'ecg') return sampleEcg(currentState, time);
+    if (type === 'ecg-i') return sampleEcgLead(currentState, time, 'i');
+    if (type === 'ecg-ii') return sampleEcgLead(currentState, time, 'ii');
+    if (type === 'ecg-v') return sampleEcgLead(currentState, time, 'v');
     if (type === 'resp') return sampleResp(currentState, time);
     if (type === 'pleth') return samplePleth(currentState, time);
     if (type === 'co2') return sampleCo2(currentState, time);

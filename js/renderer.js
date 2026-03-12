@@ -27,11 +27,11 @@
     const COLUMN_SPEED = GRID_W / SWEEP_DURATION;
 
     const traceDefs = [
-      { key: 'ecg', wave: 'ecg', color: '#00ff33', yBase: ROW_H * 0.58, amplitude: 38, noise: 0 },
-      { key: 'resp', wave: 'resp', color: '#ffee00', yBase: ROW_H * 1.58, amplitude: 28, noise: 0 },
-      { key: 'pleth', wave: 'pleth', color: '#00e5ff', yBase: ROW_H * 2.58, amplitude: 46, noise: 0.01 },
-      { key: 'co2', wave: 'co2', color: '#ff63ff', yBase: ROW_H * 3.58, amplitude: 30, noise: 0.004 },
-      { key: 'art', wave: 'art', color: '#ff4d00', yBase: ROW_H * 4.58, amplitude: 26, noise: 0.006 },
+      { key: 'ecgLeadII', wave: 'ecg-ii', color: '#00ff33', yBase: ROW_H * 0.58, amplitude: 38, noise: 0 },
+      { key: 'ecgLeadI', wave: 'ecg-i', color: '#00ff33', yBase: ROW_H * 1.58, amplitude: 34, noise: 0 },
+      { key: 'ecgLeadV', wave: 'ecg-v', color: '#00ff33', yBase: ROW_H * 2.58, amplitude: 32, noise: 0 },
+      { key: 'pleth', wave: 'pleth', color: '#00e5ff', yBase: ROW_H * 3.58, amplitude: 46, noise: 0.01 },
+      { key: 'co2', wave: 'co2', color: '#ff63ff', yBase: ROW_H * 4.58, amplitude: 30, noise: 0.004 },
       {
         key: 'channel2',
         wave: currentState => App.waves.getChannel2Wave(currentState),
@@ -304,14 +304,14 @@
 
     function drawLabels(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
-      drawLabel('II   XI', 14, 24, '#00ff33', 18);
+      drawLabel('II', 14, 24, '#00ff33', 18);
       if (currentState.showDiagnostic) {
         drawLabel('Diagnostic', 150, 24, '#7cff7c', 18);
       }
-      drawLabel('RESP', 14, ROW_H + 22, '#ffee00', 18);
-      drawLabel('Pleth', 14, ROW_H * 2 + 16, '#00e5ff', 18);
-      drawLabel('CO2', 14, ROW_H * 3 + 22, '#ff63ff', 18);
-      drawLabel('CH1:Art', 14, ROW_H * 4 + 22, '#ff4d00', 18);
+      drawLabel('I', 14, ROW_H + 22, '#00ff33', 18);
+      drawLabel('V', 14, ROW_H * 2 + 22, '#00ff33', 18);
+      drawLabel('Pleth', 14, ROW_H * 3 + 22, '#00e5ff', 18);
+      drawLabel('CO2', 14, ROW_H * 4 + 22, '#ff63ff', 18);
       drawLabel(channel2.label, 14, ROW_H * 5 + 22, '#ff4d00', 18);
     }
 

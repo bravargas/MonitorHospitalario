@@ -54,14 +54,20 @@
 
   function handleStateChange(_state, meta = {}) {
     const currentState = App.state.getState();
+    const clearEcgTraces = () => {
+      renderer.clearTrace('ecgLeadII');
+      renderer.clearTrace('ecgLeadI');
+      renderer.clearTrace('ecgLeadV');
+    };
+
     if (renderer && previousChannel2Type !== currentState.channel2Type) {
       renderer.clearTrace('channel2');
     }
     if (renderer && previousStProfile !== currentState.stProfile) {
-      renderer.clearTrace('ecg');
+      clearEcgTraces();
     }
     if (renderer && previousEcgLeadsOff !== currentState.ecgLeadsOff) {
-      renderer.clearTrace('ecg');
+      clearEcgTraces();
     }
     if (renderer && previousSpo2ProbeOff !== currentState.spo2ProbeOff) {
       renderer.clearTrace('pleth');

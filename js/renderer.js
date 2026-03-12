@@ -173,6 +173,21 @@
       ctx.restore();
     }
 
+    function traceRoundedRect(x, y, width, height, radius) {
+      const corner = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + corner, y);
+      ctx.lineTo(x + width - corner, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + corner);
+      ctx.lineTo(x + width, y + height - corner);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - corner, y + height);
+      ctx.lineTo(x + corner, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - corner);
+      ctx.lineTo(x, y + corner);
+      ctx.quadraticCurveTo(x, y, x + corner, y);
+      ctx.closePath();
+    }
+
     function drawMonitorHeader(currentState) {
       const now = new Date();
       const hasPatientName = Boolean(currentState.patientName);
@@ -253,6 +268,9 @@
     function drawPanel(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
       const st = App.state.getStMeasurements(currentState);
+      const category = App.state.getPatientCategoryConfig(currentState);
+      const display = category.display;
+      const isNeonate = currentState.patientCategory === 'neonate';
       const tempValue = currentState.temp.toFixed(1);
       const tempProbe2 = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
       const tempDelta = Math.abs(currentState.temp - tempProbe2).toFixed(1);
@@ -260,6 +278,13 @@
       const spo2Value = currentState.spo2ProbeOff ? '---' : String(currentState.spo2);
       const showTempOff = currentState.tempProbeOff;
       const diagnosticVisible = currentState.showDiagnostic;
+      const nibpNow = Date.now();
+      const nibpIsAuto = display.nibpIntervalMs > 0;
+      const nibpPhase = nibpIsAuto ? nibpNow % display.nibpIntervalMs : 0;
+      const nibpMeasuring = nibpIsAuto && nibpPhase < display.nibpMeasureMs;
+      const nibpModeText = nibpMeasuring ? 'Measuring...' : display.nibpMode;
+      const nibpValueText = nibpMeasuring ? '---/---' : `${currentState.sys}/${currentState.dia}`;
+      const nibpMapText = nibpMeasuring ? '(---)' : `(${App.state.mapPressureValue(currentState)})`;
       const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
       const heartPulse = heartAge <= 180 ? 1 - heartAge / 180 : 0;
       ctx.fillStyle = '#05070b';
@@ -296,7 +321,8 @@
       drawText(ecgValue, GRID_W + 252, diagnosticVisible ? 96 : 88, '#00ff33', currentState.ecgLeadsOff ? 72 : diagnosticVisible ? 84 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
-      drawText(String(currentState.resp), GRID_W + 82, 170, '#ffee00', 56);
+      drawText('rpm', GRID_W + 94, 134, '#ffee00', 12);
+      drawText(String(currentState.resp), GRID_W + (isNeonate ? 74 : 82), 170, '#ffee00', display.respValueSize);
 
       drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
       drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
@@ -320,7 +346,7 @@
       }
 
       drawText('CO2', GRID_W + 14, 296, '#ff63ff', 18);
-  drawText(String(currentState.co2), GRID_W + 84, 338, '#ff63ff', 56);
+      drawText(String(currentState.co2), GRID_W + 84, 338, '#ff63ff', isNeonate ? 50 : 56);
       drawText('mmHg', GRID_W + 212, 296, '#ff63ff', 18);
 
       drawText('IBP (1,2)', GRID_W + 14, 386, '#ff4d00', 18);
@@ -333,11 +359,11 @@
         drawText(channel2.unit, GRID_W + 212, 448, '#ff4d00', 18);
       }
 
-      drawText('NIBP', GRID_W + 14, 520, '#f5f5f5', 18);
+      drawText(display.nibpLabel, GRID_W + 14, 520, '#f5f5f5', isNeonate ? 16 : 18);
       drawText('mmHg', GRID_W + 212, 520, '#bdbdbd', 18);
-      drawText(`${currentState.sys}/${currentState.dia}`, GRID_W + 14, 566, '#f5f5f5', 30);
-      drawText(`(${App.state.mapPressureValue(currentState)})`, GRID_W + 210, 566, '#f5f5f5', 28, 'right');
-      drawText('Manual', GRID_W + 14, 595, '#d0d7e2', 18);
+      drawText(nibpValueText, GRID_W + 14, 566, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpValueSize);
+      drawText(nibpMapText, GRID_W + 210, 566, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpMapSize, 'right');
+      drawText(nibpModeText, GRID_W + 14, 595, nibpMeasuring ? '#ffee00' : '#d0d7e2', isNeonate ? 16 : 18);
     }
 
     function drawLabels(currentState) {
@@ -376,7 +402,8 @@
         ctx.save();
         ctx.strokeStyle = 'rgba(255,60,60,0.85)';
         ctx.lineWidth = 4;
-        ctx.strokeRect(2, 2, W - 4, H - 4);
+        traceRoundedRect(2, 2, W - 4, H - 4, 18);
+        ctx.stroke();
         ctx.restore();
       }
     }

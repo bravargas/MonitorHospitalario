@@ -20,20 +20,56 @@
     adult: {
       label: 'Adult',
       headerLabel: 'ADULT',
-      defaults: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal' },
-      limits: { hrLow: 45, hrHigh: 130, respLow: 8, respHigh: 28, spo2Low: 90, spo2Critical: 85, sysLow: 90, co2High: 50, co2Low: 25, co2LowRespGate: 20, tempHigh: 39.0, cvpHigh: 15, icpHigh: 20 }
+      defaults: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal', ecgGain: 1, ecgSweepSpeed: 25 },
+      limits: { hrLow: 45, hrHigh: 130, respLow: 8, respHigh: 28, spo2Low: 90, spo2Critical: 85, sysLow: 90, co2High: 50, co2Low: 25, co2LowRespGate: 20, tempHigh: 39.0, cvpHigh: 15, icpHigh: 20 },
+      controlRanges: {
+        hr: { min: 20, max: 220 },
+        resp: { min: 4, max: 45 },
+        spo2: { min: 50, max: 100 },
+        co2: { min: 0, max: 80 },
+        sys: { min: 50, max: 240 },
+        dia: { min: 20, max: 140 },
+        cvp: { min: 0, max: 30 },
+        temp: { min: 30, max: 42 }
+      },
+      waveProfile: { ecgScale: 1, ecgWidthScale: 1, plethScale: 1, plethWidthScale: 1, respScale: 1, respWidthScale: 1, co2Scale: 1, co2WidthScale: 1 },
+      display: { nibpLabel: 'NIBP', nibpMode: 'Manual', nibpValueSize: 30, nibpMapSize: 28, respValueSize: 56, nibpIntervalMs: 0, nibpMeasureMs: 0 }
     },
     pediatric: {
       label: 'Pediatric',
       headerLabel: 'PEDIATRIC',
-      defaults: { hr: 105, resp: 22, spo2: 99, co2: 36, sys: 100, dia: 62, temp: 37.0, cvp: 8, stProfile: 'normal' },
-      limits: { hrLow: 70, hrHigh: 160, respLow: 15, respHigh: 40, spo2Low: 92, spo2Critical: 88, sysLow: 75, co2High: 50, co2Low: 30, co2LowRespGate: 28, tempHigh: 38.8, cvpHigh: 12, icpHigh: 20 }
+      defaults: { hr: 105, resp: 22, spo2: 99, co2: 36, sys: 100, dia: 62, temp: 37.0, cvp: 8, stProfile: 'normal', ecgGain: 1, ecgSweepSpeed: 25 },
+      limits: { hrLow: 70, hrHigh: 160, respLow: 15, respHigh: 40, spo2Low: 92, spo2Critical: 88, sysLow: 75, co2High: 50, co2Low: 30, co2LowRespGate: 28, tempHigh: 38.8, cvpHigh: 12, icpHigh: 20 },
+      controlRanges: {
+        hr: { min: 40, max: 220 },
+        resp: { min: 8, max: 60 },
+        spo2: { min: 60, max: 100 },
+        co2: { min: 10, max: 80 },
+        sys: { min: 45, max: 180 },
+        dia: { min: 20, max: 110 },
+        cvp: { min: 0, max: 24 },
+        temp: { min: 34, max: 40.5 }
+      },
+      waveProfile: { ecgScale: 0.92, ecgWidthScale: 0.9, plethScale: 1.06, plethWidthScale: 0.92, respScale: 0.92, respWidthScale: 0.9, co2Scale: 0.94, co2WidthScale: 0.9 },
+      display: { nibpLabel: 'NIBP Peds', nibpMode: 'Auto 3 min', nibpValueSize: 28, nibpMapSize: 26, respValueSize: 52, nibpIntervalMs: 180000, nibpMeasureMs: 7000 }
     },
     neonate: {
       label: 'Neonate',
       headerLabel: 'NEONATE',
-      defaults: { hr: 140, resp: 40, spo2: 98, co2: 34, sys: 72, dia: 45, temp: 36.8, cvp: 6, stProfile: 'normal' },
-      limits: { hrLow: 100, hrHigh: 180, respLow: 25, respHigh: 60, spo2Low: 90, spo2Critical: 85, sysLow: 60, co2High: 50, co2Low: 30, co2LowRespGate: 35, tempHigh: 38.5, cvpHigh: 10, icpHigh: 20 }
+      defaults: { hr: 140, resp: 40, spo2: 98, co2: 34, sys: 72, dia: 45, temp: 36.8, cvp: 6, stProfile: 'normal', ecgGain: 2, ecgSweepSpeed: 50 },
+      limits: { hrLow: 100, hrHigh: 180, respLow: 25, respHigh: 60, spo2Low: 90, spo2Critical: 85, sysLow: 60, co2High: 50, co2Low: 30, co2LowRespGate: 35, tempHigh: 38.5, cvpHigh: 10, icpHigh: 20 },
+      controlRanges: {
+        hr: { min: 70, max: 220 },
+        resp: { min: 15, max: 80 },
+        spo2: { min: 70, max: 100 },
+        co2: { min: 10, max: 70 },
+        sys: { min: 40, max: 120 },
+        dia: { min: 20, max: 90 },
+        cvp: { min: 0, max: 20 },
+        temp: { min: 34, max: 39.5 }
+      },
+      waveProfile: { ecgScale: 0.76, ecgWidthScale: 0.72, plethScale: 0.82, plethWidthScale: 0.78, respScale: 0.7, respWidthScale: 0.72, co2Scale: 0.86, co2WidthScale: 0.78 },
+      display: { nibpLabel: 'NIBP Neo', nibpMode: 'Auto 1 min', nibpValueSize: 26, nibpMapSize: 24, respValueSize: 48, nibpIntervalMs: 60000, nibpMeasureMs: 6000 }
     }
   };
 
@@ -129,6 +165,9 @@
       return patch;
     }
 
+    const categoryKey = PATIENT_CATEGORIES.includes(input.patientCategory) ? input.patientCategory : state.patientCategory;
+    const categoryConfig = PATIENT_CATEGORY_CONFIGS[categoryKey] || PATIENT_CATEGORY_CONFIGS[DEFAULT_STATE.patientCategory];
+
     numericKeys.forEach((cfg, key) => {
       if (!(key in input)) {
         return;
@@ -137,7 +176,11 @@
       if (!Number.isFinite(raw)) {
         return;
       }
-      patch[key] = roundByStep(clamp(raw, cfg.min, cfg.max), cfg.step);
+      const range = categoryConfig.controlRanges?.[key] || {};
+      const min = range.min ?? cfg.min;
+      const max = range.max ?? cfg.max;
+      const step = range.step ?? cfg.step;
+      patch[key] = roundByStep(clamp(raw, min, max), step);
     });
 
     ['alarmsEnabled', 'soundEnabled', 'running', 'showGrid', 'showDiagnostic', 'ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff'].forEach(key => {
@@ -307,6 +350,18 @@
     return PATIENT_CATEGORY_CONFIGS[key];
   }
 
+  function getControlRangeConfig(key, currentState = state) {
+    const base = numericKeys.get(key);
+    if (!base) {
+      return null;
+    }
+    const category = getPatientCategoryConfig(currentState);
+    return {
+      ...base,
+      ...(category.controlRanges?.[key] || {})
+    };
+  }
+
   App.state = {
     CHANNEL2_TYPES,
     CONTROL_CONFIG,
@@ -321,6 +376,7 @@
     applyProfile,
     clamp,
     getChannel2Display,
+    getControlRangeConfig,
     getPatientCategoryConfig,
     getStMeasurements,
     getSerializableState,

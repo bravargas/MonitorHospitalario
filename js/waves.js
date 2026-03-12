@@ -18,24 +18,27 @@
     const beatPeriod = safePeriod(currentState.hr, 20);
     const p = phase01(time, beatPeriod);
     const baseline = Math.sin(time * 1.7) * 0.01;
+    const waveProfile = App.state.getPatientCategoryConfig(currentState).waveProfile;
     const st = App.state.getStMeasurements(currentState);
     const leadShape = {
       ii: { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 },
       i: { stValue: st.i, pAmp: 0.09, qAmp: 0.12, rAmp: 0.82, sAmp: 0.18, tAmp: 0.18, invert: 1 },
       v: { stValue: st.v, pAmp: 0.05, qAmp: 0.08, rAmp: 0.28, sAmp: 0.72, tAmp: 0.10, invert: 1 }
     }[lead] || { stValue: st.ii, pAmp: 0.12, qAmp: 0.16, rAmp: 1.08, sAmp: 0.22, tAmp: 0.26, invert: 1 };
+    const widthScale = waveProfile.ecgWidthScale || 1;
+    const amplitudeScale = waveProfile.ecgScale || 1;
     const stSegment = gaussian(p, 0.52, 0.038, leadShape.stValue * 0.18) + gaussian(p, 0.60, 0.050, leadShape.stValue * 0.13);
     const vTail = lead === 'v'
       ? -gaussian(p, 0.445, 0.016, 0.18) + gaussian(p, 0.70, 0.055, leadShape.stValue * 0.05)
       : 0;
     return baseline
-      + gaussian(p, 0.18, 0.028, leadShape.pAmp * leadShape.invert)
-      - gaussian(p, 0.39, 0.010, leadShape.qAmp * leadShape.invert)
-      + gaussian(p, 0.405, 0.006, leadShape.rAmp * leadShape.invert)
-      - gaussian(p, 0.43, 0.012, leadShape.sAmp * leadShape.invert)
+      + gaussian(p, 0.18, 0.028 * widthScale, leadShape.pAmp * leadShape.invert * amplitudeScale)
+      - gaussian(p, 0.39, 0.010 * widthScale, leadShape.qAmp * leadShape.invert * amplitudeScale)
+      + gaussian(p, 0.405, 0.006 * widthScale, leadShape.rAmp * leadShape.invert * amplitudeScale)
+      - gaussian(p, 0.43, 0.012 * widthScale, leadShape.sAmp * leadShape.invert * amplitudeScale)
       + stSegment
       + vTail
-      + gaussian(p, 0.68, 0.060, leadShape.tAmp * leadShape.invert);
+      + gaussian(p, 0.68, 0.060 * Math.max(0.82, widthScale), leadShape.tAmp * leadShape.invert * amplitudeScale);
   }
 
   function sampleEcg(currentState, time) {
@@ -45,26 +48,40 @@
   function sampleResp(currentState, time) {
     const breathPeriod = safePeriod(currentState.resp, 4);
     const p = phase01(time, breathPeriod);
-    return Math.sin(p * Math.PI * 2 - Math.PI / 2) * 0.72;
+    const waveProfile = App.state.getPatientCategoryConfig(currentState).waveProfile;
+    const scale = waveProfile.respScale || 1;
+    const widthScale = waveProfile.respWidthScale || 1;
+    const shapedPhase = Math.pow(p, Math.max(0.68, widthScale));
+    return Math.sin(shapedPhase * Math.PI * 2 - Math.PI / 2) * (0.72 * scale);
   }
 
   function samplePleth(currentState, time) {
     const beatPeriod = safePeriod(currentState.hr, 20);
     const p = phase01(time, beatPeriod);
-    const upstroke = Math.pow(Math.max(0, Math.sin(Math.PI * p)), 2.4);
-    const notch = gaussian(p, 0.52, 0.040, 0.14);
-    const runoff = gaussian(p, 0.68, 0.090, 0.24);
-    return upstroke * 0.95 + notch + runoff - 0.08;
+    const waveProfile = App.state.getPatientCategoryConfig(currentState).waveProfile;
+    const plethScale = waveProfile.plethScale || 1;
+    const plethWidthScale = waveProfile.plethWidthScale || 1;
+    const upstroke = Math.pow(Math.max(0, Math.sin(Math.PI * p)), 2.4 - (1 - plethWidthScale) * 0.5);
+    const notch = gaussian(p, 0.52, 0.040 * plethWidthScale, 0.14 * plethScale);
+    const runoff = gaussian(p, 0.68, 0.090 * plethWidthScale, 0.24 * plethScale);
+    return upstroke * (0.95 * plethScale) + notch + runoff - 0.08;
   }
 
   function sampleCo2(currentState, time) {
     const breathPeriod = safePeriod(currentState.resp, 4);
     const p = phase01(time, breathPeriod);
-    if (p < 0.14) return -0.56;
-    if (p < 0.24) return -0.56 + (p - 0.14) * 4.6;
-    if (p < 0.62) return 0.08 + (1 - Math.exp(-(p - 0.24) * 8)) * 0.52;
-    if (p < 0.78) return 0.56 - (p - 0.62) * 0.16;
-    return 0.54 - (p - 0.78) * 5.0;
+    const waveProfile = App.state.getPatientCategoryConfig(currentState).waveProfile;
+    const amplitudeScale = waveProfile.co2Scale || 1;
+    const widthScale = waveProfile.co2WidthScale || 1;
+    const riseStart = 0.14 * widthScale;
+    const riseEnd = 0.24 * widthScale;
+    const plateauEnd = Math.min(0.72, 0.62 * widthScale + 0.10);
+    const downStart = Math.min(0.88, 0.78 * widthScale + 0.10);
+    if (p < riseStart) return -0.56;
+    if (p < riseEnd) return -0.56 + ((p - riseStart) / Math.max(0.04, riseEnd - riseStart)) * (0.64 * amplitudeScale);
+    if (p < plateauEnd) return 0.08 + (1 - Math.exp(-((p - riseEnd) / Math.max(0.06, plateauEnd - riseEnd)) * 2.2)) * (0.52 * amplitudeScale);
+    if (p < downStart) return (0.56 * amplitudeScale) - ((p - plateauEnd) / Math.max(0.06, downStart - plateauEnd)) * 0.16;
+    return (0.54 * amplitudeScale) - ((p - downStart) / Math.max(0.08, 1 - downStart)) * ((0.54 * amplitudeScale) + 0.56);
   }
 
   function sampleArt(currentState, time) {

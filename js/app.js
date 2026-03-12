@@ -5,6 +5,7 @@
   let renderer = null;
   let audioManager = null;
   let syncManager = null;
+  let previousPatientCategory = App.state.getState().patientCategory;
   let previousChannel2Type = App.state.getState().channel2Type;
   let previousStProfile = App.state.getState().stProfile;
   let previousEcgGain = App.state.getState().ecgGain;
@@ -65,6 +66,10 @@
     if (renderer && previousChannel2Type !== currentState.channel2Type) {
       renderer.clearTrace('channel2');
     }
+    if (renderer && previousPatientCategory !== currentState.patientCategory) {
+      clearEcgTraces();
+      renderer.clearTrace('pleth');
+    }
     if (renderer && previousStProfile !== currentState.stProfile) {
       clearEcgTraces();
     }
@@ -81,6 +86,7 @@
       renderer.clearTrace('pleth');
     }
 
+    previousPatientCategory = currentState.patientCategory;
     previousChannel2Type = currentState.channel2Type;
     previousStProfile = currentState.stProfile;
     previousEcgGain = currentState.ecgGain;

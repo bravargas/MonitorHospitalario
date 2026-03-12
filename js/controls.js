@@ -117,8 +117,19 @@
       refresh() {
         const nextState = App.state.getState();
         App.state.CONTROL_CONFIG.forEach(cfg => {
-          if (cache.numeric[cfg.key]) cache.numeric[cfg.key].value = nextState[cfg.key];
-          if (cache.ranges[cfg.key]) cache.ranges[cfg.key].value = nextState[cfg.key];
+          const bounds = App.state.getControlRangeConfig(cfg.key, nextState);
+          if (cache.numeric[cfg.key]) {
+            cache.numeric[cfg.key].min = bounds.min;
+            cache.numeric[cfg.key].max = bounds.max;
+            cache.numeric[cfg.key].step = bounds.step;
+            cache.numeric[cfg.key].value = nextState[cfg.key];
+          }
+          if (cache.ranges[cfg.key]) {
+            cache.ranges[cfg.key].min = bounds.min;
+            cache.ranges[cfg.key].max = bounds.max;
+            cache.ranges[cfg.key].step = bounds.step;
+            cache.ranges[cfg.key].value = nextState[cfg.key];
+          }
         });
 
         const startButton = document.getElementById('btnStart');

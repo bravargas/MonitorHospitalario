@@ -127,6 +127,26 @@
       ctx.restore();
     }
 
+    function drawHeartIcon(x, y, size, pulse) {
+      const baseScale = size / 16;
+      const scale = baseScale * (0.9 + pulse * 0.18);
+      const glow = 0.24 + pulse * 0.5;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.shadowColor = `rgba(255, 48, 72, ${glow})`;
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#ff3048';
+      ctx.beginPath();
+      ctx.moveTo(0, 8);
+      ctx.bezierCurveTo(-18, -10, -36, 8, 0, 34);
+      ctx.bezierCurveTo(36, 8, 18, -10, 0, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
     function drawSweepTrace(def, currentState) {
       const amplitude = typeof def.amplitude === 'function' ? def.amplitude(currentState) : def.amplitude;
       const buffer = buffers[def.key];
@@ -177,6 +197,11 @@
 
     function drawPanel(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
+      const tempValue = currentState.temp.toFixed(1);
+      const tempProbe2 = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
+      const tempDelta = Math.abs(currentState.temp - tempProbe2).toFixed(1);
+      const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
+      const heartPulse = heartAge <= 180 ? 1 - heartAge / 180 : 0;
       ctx.fillStyle = '#05070b';
       ctx.fillRect(GRID_W, 0, PANEL_W, H);
       ctx.strokeStyle = '#1437a8';
@@ -200,15 +225,20 @@
 
       drawText('ECG', GRID_W + 14, 28, '#6eff6e', 18);
       drawText('bpm', GRID_W + 14, 46, '#6eff6e', 18);
+      drawHeartIcon(GRID_W + 36, 76, 10, heartPulse);
       drawText(String(currentState.hr), GRID_W + 230, 88, '#00ff33', 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
       drawText(String(currentState.resp), GRID_W + 90, 170, '#ffee00', 56);
 
-      drawText('TEMP', GRID_W + 166, 134, '#ffb000', 18);
-      drawText('T1', GRID_W + 166, 152, '#ffb000', 14);
-      drawText('T2', GRID_W + 166, 168, '#ffb000', 14);
-      drawText('TD', GRID_W + 166, 184, '#ffb000', 14);
+      drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
+      drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
+      drawText(tempValue, GRID_W + 258, 150, '#ffb000', 22, 'right');
+      drawText('°C', GRID_W + 284, 150, '#ffb000', 12, 'right');
+      drawText('T2', GRID_W + 166, 166, '#ffb000', 14);
+      drawText(tempProbe2.toFixed(1), GRID_W + 258, 166, '#ffb000', 18, 'right');
+      drawText('TD', GRID_W + 166, 178, '#ffb000', 14);
+      drawText(tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
 
       drawText('SpO2', GRID_W + 14, 206, '#00e5ff', 18);
       drawText(String(currentState.spo2), GRID_W + 90, 248, '#00e5ff', 56);

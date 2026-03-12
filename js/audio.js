@@ -4,6 +4,27 @@
   function createAudioManager({ enabled = true } = {}) {
     let audioCtx = null;
 
+    function playTone(frequency, duration, volumeScale) {
+      const currentState = App.state.getState();
+      const ctx = ensureContext();
+      if (!ctx || !currentState.soundEnabled) {
+        return false;
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, currentState.alarmVolume * volumeScale), ctx.currentTime + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration + 0.01);
+      return true;
+    }
+
     function ensureContext() {
       const currentState = App.state.getState();
       if (!enabled || !currentState.soundEnabled) {
@@ -31,27 +52,30 @@
 
     function beep(frequency = 880, duration = 0.12) {
       const currentState = App.state.getState();
-      const ctx = ensureContext();
-      if (!ctx || !currentState.soundEnabled || !currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
+      if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
         return;
       }
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = frequency;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, currentState.alarmVolume * 0.06), ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + duration + 0.01);
+      playTone(frequency, duration, 0.06);
+    }
+
+    function heartBeatTone() {
+      playTone(1320, 0.045, 0.04);
     }
 
     function process(now) {
       const currentState = App.state.getState();
-      if (!enabled || !currentState.running || !currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
+      if (!enabled || !currentState.running) {
+        return;
+      }
+
+      const beatInterval = 60000 / Math.max(20, currentState.hr);
+      if (now - currentState.lastHeartBeatAt >= beatInterval) {
+        heartBeatTone();
+        currentState.lastHeartBeatAt = now;
+      }
+
+      if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
         return;
       }
 

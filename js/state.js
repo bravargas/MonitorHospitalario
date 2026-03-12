@@ -28,6 +28,7 @@
     alarmVolume: 0.5,
     activeAlarms: [],
     lastAlarmBeep: 0,
+    lastHeartBeatAt: 0,
     audioUnlocked: false,
     running: true,
     showGrid: true,

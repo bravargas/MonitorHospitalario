@@ -105,8 +105,8 @@
     const frame = now => {
       const dt = Math.min(0.05, (now - last) / 1000 || 0);
       last = now;
-      renderer?.renderFrame(dt);
       audioManager?.process(now);
+      renderer?.renderFrame(dt);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);

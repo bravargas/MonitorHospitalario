@@ -2,6 +2,7 @@
   const App = (window.MonitorApp = window.MonitorApp || {});
 
   const CHANNEL2_TYPES = ['cvp', 'art2', 'pap', 'icp', 'off'];
+  const PATIENT_CATEGORIES = ['adult', 'pediatric', 'neonate'];
   const ECG_GAINS = [0.5, 1, 2];
   const ECG_SWEEP_SPEEDS = [12.5, 25, 50];
   const CONTROL_CONFIG = [
@@ -15,13 +16,52 @@
     { key: 'temp', label: 'Temperature', min: 30, max: 42, step: 0.1, unit: '°C' }
   ];
 
+  const PATIENT_CATEGORY_CONFIGS = {
+    adult: {
+      label: 'Adult',
+      headerLabel: 'ADULT',
+      defaults: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal' },
+      limits: { hrLow: 45, hrHigh: 130, respLow: 8, respHigh: 28, spo2Low: 90, spo2Critical: 85, sysLow: 90, co2High: 50, co2Low: 25, co2LowRespGate: 20, tempHigh: 39.0, cvpHigh: 15, icpHigh: 20 }
+    },
+    pediatric: {
+      label: 'Pediatric',
+      headerLabel: 'PEDIATRIC',
+      defaults: { hr: 105, resp: 22, spo2: 99, co2: 36, sys: 100, dia: 62, temp: 37.0, cvp: 8, stProfile: 'normal' },
+      limits: { hrLow: 70, hrHigh: 160, respLow: 15, respHigh: 40, spo2Low: 92, spo2Critical: 88, sysLow: 75, co2High: 50, co2Low: 30, co2LowRespGate: 28, tempHigh: 38.8, cvpHigh: 12, icpHigh: 20 }
+    },
+    neonate: {
+      label: 'Neonate',
+      headerLabel: 'NEONATE',
+      defaults: { hr: 140, resp: 40, spo2: 98, co2: 34, sys: 72, dia: 45, temp: 36.8, cvp: 6, stProfile: 'normal' },
+      limits: { hrLow: 100, hrHigh: 180, respLow: 25, respHigh: 60, spo2Low: 90, spo2Critical: 85, sysLow: 60, co2High: 50, co2Low: 30, co2LowRespGate: 35, tempHigh: 38.5, cvpHigh: 10, icpHigh: 20 }
+    }
+  };
+
   const PROFILES = {
-    normal: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal' },
-    tachy: { hr: 135, resp: 24, spo2: 97, co2: 35, sys: 110, dia: 70, temp: 37.4, cvp: 8, stProfile: 'nonspecific' },
-    brady: { hr: 42, resp: 10, spo2: 98, co2: 40, sys: 100, dia: 60, temp: 36.5, cvp: 9, stProfile: 'normal' },
-    hypoxia: { hr: 118, resp: 30, spo2: 82, co2: 32, sys: 126, dia: 76, temp: 37.2, cvp: 10, stProfile: 'depression' },
-    shock: { hr: 145, resp: 32, spo2: 89, co2: 28, sys: 78, dia: 48, temp: 36.1, cvp: 4, stProfile: 'depression' },
-    sedation: { hr: 58, resp: 8, spo2: 95, co2: 47, sys: 108, dia: 68, temp: 36.7, cvp: 11, stProfile: 'normal' }
+    adult: {
+      normal: { hr: 80, resp: 14, spo2: 99, co2: 38, sys: 120, dia: 80, temp: 37.0, cvp: 10, stProfile: 'normal' },
+      tachy: { hr: 135, resp: 24, spo2: 97, co2: 35, sys: 110, dia: 70, temp: 37.4, cvp: 8, stProfile: 'nonspecific' },
+      brady: { hr: 42, resp: 10, spo2: 98, co2: 40, sys: 100, dia: 60, temp: 36.5, cvp: 9, stProfile: 'normal' },
+      hypoxia: { hr: 118, resp: 30, spo2: 82, co2: 32, sys: 126, dia: 76, temp: 37.2, cvp: 10, stProfile: 'depression' },
+      shock: { hr: 145, resp: 32, spo2: 89, co2: 28, sys: 78, dia: 48, temp: 36.1, cvp: 4, stProfile: 'depression' },
+      sedation: { hr: 58, resp: 8, spo2: 95, co2: 47, sys: 108, dia: 68, temp: 36.7, cvp: 11, stProfile: 'normal' }
+    },
+    pediatric: {
+      normal: { hr: 105, resp: 22, spo2: 99, co2: 36, sys: 100, dia: 62, temp: 37.0, cvp: 8, stProfile: 'normal' },
+      tachy: { hr: 165, resp: 34, spo2: 97, co2: 34, sys: 98, dia: 58, temp: 37.6, cvp: 7, stProfile: 'nonspecific' },
+      brady: { hr: 62, resp: 16, spo2: 98, co2: 38, sys: 92, dia: 54, temp: 36.7, cvp: 8, stProfile: 'normal' },
+      hypoxia: { hr: 150, resp: 38, spo2: 84, co2: 30, sys: 102, dia: 64, temp: 37.3, cvp: 8, stProfile: 'depression' },
+      shock: { hr: 170, resp: 42, spo2: 90, co2: 26, sys: 74, dia: 38, temp: 36.4, cvp: 4, stProfile: 'depression' },
+      sedation: { hr: 78, resp: 14, spo2: 97, co2: 44, sys: 94, dia: 56, temp: 36.8, cvp: 8, stProfile: 'normal' }
+    },
+    neonate: {
+      normal: { hr: 140, resp: 40, spo2: 98, co2: 34, sys: 72, dia: 45, temp: 36.8, cvp: 6, stProfile: 'normal' },
+      tachy: { hr: 185, resp: 52, spo2: 96, co2: 33, sys: 68, dia: 40, temp: 37.4, cvp: 5, stProfile: 'nonspecific' },
+      brady: { hr: 95, resp: 24, spo2: 97, co2: 36, sys: 66, dia: 38, temp: 36.5, cvp: 6, stProfile: 'normal' },
+      hypoxia: { hr: 175, resp: 58, spo2: 86, co2: 28, sys: 70, dia: 42, temp: 37.2, cvp: 6, stProfile: 'depression' },
+      shock: { hr: 190, resp: 60, spo2: 88, co2: 24, sys: 58, dia: 32, temp: 36.2, cvp: 3, stProfile: 'depression' },
+      sedation: { hr: 110, resp: 28, spo2: 96, co2: 42, sys: 68, dia: 40, temp: 36.7, cvp: 6, stProfile: 'normal' }
+    }
   };
 
   const ST_PROFILES = {
@@ -46,6 +86,7 @@
     running: true,
     showGrid: true,
     showDiagnostic: true,
+    patientCategory: 'adult',
     channel2Type: 'cvp',
     stProfile: 'normal',
     patientName: '',
@@ -116,6 +157,10 @@
       patch.channel2Type = CHANNEL2_TYPES.includes(input.channel2Type) ? input.channel2Type : DEFAULT_STATE.channel2Type;
     }
 
+    if ('patientCategory' in input) {
+      patch.patientCategory = PATIENT_CATEGORIES.includes(input.patientCategory) ? input.patientCategory : DEFAULT_STATE.patientCategory;
+    }
+
     if ('stProfile' in input) {
       patch.stProfile = ST_PROFILES[input.stProfile] ? input.stProfile : DEFAULT_STATE.stProfile;
     }
@@ -183,6 +228,7 @@
       running: state.running,
       showGrid: state.showGrid,
       showDiagnostic: state.showDiagnostic,
+      patientCategory: state.patientCategory,
       channel2Type: state.channel2Type,
       stProfile: state.stProfile,
       patientName: state.patientName,
@@ -200,10 +246,16 @@
   }
 
   function applyProfile(name, meta = { source: 'local' }) {
-    if (!PROFILES[name]) {
+    const category = PATIENT_CATEGORY_CONFIGS[state.patientCategory] ? state.patientCategory : DEFAULT_STATE.patientCategory;
+    if (!PROFILES[category] || !PROFILES[category][name]) {
       return false;
     }
-    return setState(PROFILES[name], meta);
+    return setState(PROFILES[category][name], meta);
+  }
+
+  function applyPatientCategory(name, meta = { source: 'local' }) {
+    const category = PATIENT_CATEGORY_CONFIGS[name] ? name : DEFAULT_STATE.patientCategory;
+    return setState({ patientCategory: category, ...PATIENT_CATEGORY_CONFIGS[category].defaults }, meta);
   }
 
   function mapPressureValue(currentState = state) {
@@ -250,17 +302,26 @@
     return ST_PROFILES[key];
   }
 
+  function getPatientCategoryConfig(currentState = state) {
+    const key = PATIENT_CATEGORY_CONFIGS[currentState.patientCategory] ? currentState.patientCategory : DEFAULT_STATE.patientCategory;
+    return PATIENT_CATEGORY_CONFIGS[key];
+  }
+
   App.state = {
     CHANNEL2_TYPES,
     CONTROL_CONFIG,
     DEFAULT_STATE,
     ECG_GAINS,
     ECG_SWEEP_SPEEDS,
+    PATIENT_CATEGORIES,
+    PATIENT_CATEGORY_CONFIGS,
     PROFILES,
     ST_PROFILES,
+    applyPatientCategory,
     applyProfile,
     clamp,
     getChannel2Display,
+    getPatientCategoryConfig,
     getStMeasurements,
     getSerializableState,
     getState,

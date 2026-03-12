@@ -177,22 +177,24 @@
       const now = new Date();
       const hasPatientName = Boolean(currentState.patientName);
       const patientName = hasPatientName ? currentState.patientName : 'No name';
+      const category = App.state.getPatientCategoryConfig(currentState);
       const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
       drawText('MANUAL', 18, 18, '#8cff8c', 14);
       drawText(`x${currentState.ecgGain}`, 108, 18, '#8cff8c', 14);
       drawText('MON', 152, 18, '#8cff8c', 14);
       drawText(patientName, 218, 18, hasPatientName ? '#73e0ff' : 'rgba(115, 224, 255, 0.42)', 14);
-      drawText('ADULT', GRID_W - 286, 18, '#df84ff', 14);
+      drawText(category.headerLabel, GRID_W - 340, 18, '#df84ff', 14);
       drawText(stamp, GRID_W - 92, 18, '#f5f5f5', 12, 'right');
       drawText(`${currentState.ecgSweepSpeed} mm/s`, GRID_W - 12, 18, '#f5f5f5', 14, 'right');
     }
 
-    function drawRightEdgeReferences() {
+    function drawRightEdgeReferences(currentState) {
+      const limits = App.state.getPatientCategoryConfig(currentState).limits;
       const rightX = GRID_W - 8;
-      drawText('130', rightX, HEADER_H + 16, '#7cff7c', 13, 'right');
-      drawText('45', rightX, HEADER_H + ROW_H - 8, '#7cff7c', 13, 'right');
-      drawText('90', rightX, HEADER_H + ROW_H * 3 + 16, '#00e5ff', 13, 'right');
-      drawText('85', rightX, HEADER_H + ROW_H * 4 - 8, '#ff5252', 13, 'right');
+      drawText(String(limits.hrHigh), rightX, HEADER_H + 16, '#7cff7c', 13, 'right');
+      drawText(String(limits.hrLow), rightX, HEADER_H + ROW_H - 8, '#7cff7c', 13, 'right');
+      drawText(String(limits.spo2Low), rightX, HEADER_H + ROW_H * 3 + 16, '#00e5ff', 13, 'right');
+      drawText(String(limits.spo2Critical), rightX, HEADER_H + ROW_H * 4 - 8, '#ff5252', 13, 'right');
     }
 
     function formatSigned(value) {
@@ -366,7 +368,7 @@
       drawSweepHead();
       drawHeaderBand();
       drawMonitorHeader(currentState);
-      drawRightEdgeReferences();
+      drawRightEdgeReferences(currentState);
       drawLabels(currentState);
       drawPanel(currentState);
 

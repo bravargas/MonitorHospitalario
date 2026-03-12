@@ -69,6 +69,10 @@
       });
     });
 
+    document.getElementById('patientCategory')?.addEventListener('change', event => {
+      App.state.applyPatientCategory(event.target.value, { source: 'local' });
+    });
+
     document.getElementById('channel2Type')?.addEventListener('change', event => {
       App.state.setState({ channel2Type: event.target.value }, { source: 'local' });
     });
@@ -148,6 +152,9 @@
             document.getElementById(key).checked = nextState[key];
           }
         });
+        if (document.getElementById('patientCategory')) {
+          document.getElementById('patientCategory').value = nextState.patientCategory;
+        }
         if (document.getElementById('channel2Type')) {
           document.getElementById('channel2Type').value = nextState.channel2Type;
         }

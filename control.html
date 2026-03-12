@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Patient Controls | Hospital Monitor</title>
+  <title>BrainMed Patient Controls | Hospital Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body data-page="control">
@@ -11,7 +11,7 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <h1 class="title">Patient Controls</h1>
+          <h1 class="title">BrainMed Patient Controls</h1>
           <p class="subtitle">Instructor display</p>
         </div>
         <div class="page-actions">
@@ -157,13 +157,60 @@
           </div>
         </div>
 
+        <div class="control">
+          <div class="control-top">
+            <label for="trendEvent">Clinical event</label>
+            <div class="value-box">
+              <select id="trendEvent">
+                <optgroup label="Respiratory">
+                  <option value="desaturation">Desaturation</option>
+                  <option value="hypoventilation">Hypoventilation</option>
+                  <option value="apnea">Apnea</option>
+                  <option value="bronchospasm">Bronchospasm</option>
+                </optgroup>
+                <optgroup label="Hemodynamic">
+                  <option value="septicShock">Septic shock</option>
+                  <option value="compensatedSepsis">Compensated sepsis</option>
+                </optgroup>
+                <optgroup label="Recovery">
+                  <option value="recovery">Recovery</option>
+                  <option value="postIntubationRecovery">Post-intubation recovery</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+          <div class="control-top compact-top">
+            <label for="trendDurationSeconds">Event duration</label>
+            <div class="value-box">
+              <input id="trendDurationSeconds" type="number" min="5" max="180" step="1" value="22" />
+              <span class="unit">sec</span>
+            </div>
+          </div>
+          <div class="control-top compact-top">
+            <label for="trendHoldSeconds">Hold phase</label>
+            <div class="value-box">
+              <input id="trendHoldSeconds" type="number" min="0" max="120" step="1" value="5" />
+              <span class="unit">sec</span>
+            </div>
+          </div>
+          <div id="trendPresetHint" class="note inline-note subtle-note">Desaturation uses an acute preset with a short hold.</div>
+          <div class="control-actions">
+            <button id="btnStartTrend">Start event</button>
+            <button id="btnStopTrend">Stop event</button>
+            <button id="btnNibpNow">NIBP now</button>
+          </div>
+          <div id="trendStatus" class="note inline-note">No active event</div>
+        </div>
+
         <div class="quick">
-          <button data-profile="normal">Normal profile</button>
+          <button data-profile="normal">Normal</button>
           <button data-profile="tachy">Tachycardia</button>
           <button data-profile="brady">Bradycardia</button>
           <button data-profile="hypoxia">Hypoxia</button>
           <button data-profile="shock">Shock</button>
           <button data-profile="sedation">Sedation</button>
+          <button data-profile="compensatedSepsis">Comp. sepsis</button>
+          <button data-profile="postIntubation">Post-intubation</button>
         </div>
 
         <div id="controls"></div>

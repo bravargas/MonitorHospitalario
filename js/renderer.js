@@ -44,8 +44,34 @@
     ];
 
     const buffers = Object.fromEntries(traceDefs.map(def => [def.key, createBuffer(GRID_W)]));
+    const deviceStatus = {
+      batteryLevel: 100,
+      charging: true,
+      networkOnline: navigator.onLine !== false
+    };
     let sweepX = 0;
     let signalTime = 0;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.getBattery === 'function') {
+      navigator.getBattery().then(battery => {
+        const updateBattery = () => {
+          deviceStatus.batteryLevel = Math.round((battery.level || 1) * 100);
+          deviceStatus.charging = Boolean(battery.charging);
+        };
+        updateBattery();
+        battery.addEventListener?.('levelchange', updateBattery);
+        battery.addEventListener?.('chargingchange', updateBattery);
+      }).catch(() => {});
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        deviceStatus.networkOnline = true;
+      });
+      window.addEventListener('offline', () => {
+        deviceStatus.networkOnline = false;
+      });
+    }
 
     function clearTrace(key) {
       if (!buffers[key]) {
@@ -188,17 +214,74 @@
       ctx.closePath();
     }
 
+    function drawBatteryIcon(x, y, width, height, level, charging) {
+      const normalized = Math.max(0, Math.min(100, level)) / 100;
+      ctx.save();
+      ctx.strokeStyle = charging ? '#8cff8c' : '#d0d7e2';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x, y, width, height);
+      ctx.strokeRect(x + width, y + height * 0.28, 3, height * 0.44);
+      ctx.fillStyle = normalized > 0.25 ? (charging ? '#8cff8c' : '#d0d7e2') : '#ff5252';
+      ctx.fillRect(x + 2, y + 2, Math.max(2, (width - 4) * normalized), height - 4);
+      ctx.restore();
+    }
+
+    function drawNetworkIcon(x, y, online) {
+      ctx.save();
+      for (let index = 0; index < 4; index += 1) {
+        const height = 3 + index * 2;
+        ctx.fillStyle = online || index === 0 ? '#73e0ff' : 'rgba(115, 224, 255, 0.18)';
+        ctx.fillRect(x + index * 4, y + 10 - height, 3, height);
+      }
+      if (!online) {
+        ctx.strokeStyle = '#ff5252';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x - 1, y + 11);
+        ctx.lineTo(x + 16, y - 1);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawStatusBadge(text, x, y, active, color) {
+      const badgeColor = active ? color : 'rgba(208, 215, 226, 0.38)';
+      ctx.save();
+      ctx.font = '700 10px Consolas, Monaco, monospace';
+      const width = Math.ceil(ctx.measureText(text).width) + 12;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+      ctx.fillRect(x, y - 9, width, 12);
+      ctx.strokeStyle = badgeColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, y - 8.5, width - 1, 11);
+      ctx.fillStyle = badgeColor;
+      ctx.fillText(text, x + 6, y);
+      ctx.restore();
+      return width;
+    }
+
     function drawMonitorHeader(currentState) {
       const now = new Date();
       const hasPatientName = Boolean(currentState.patientName);
       const patientName = hasPatientName ? currentState.patientName : 'No name';
       const category = App.state.getPatientCategoryConfig(currentState);
+      const display = category.display;
       const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-      drawText('MANUAL', 18, 18, '#8cff8c', 14);
+      let badgeX = 108;
+      const nibpHeaderMode = display.nibpIntervalMs > 0 ? 'AUTO' : 'MANUAL';
+      drawText(nibpHeaderMode, 18, 18, '#8cff8c', 14);
+      drawText('BrainMed', 18, 32, '#73e0ff', 12);
       drawText(`x${currentState.ecgGain}`, 108, 18, '#8cff8c', 14);
       drawText('MON', 152, 18, '#8cff8c', 14);
       drawText(patientName, 218, 18, hasPatientName ? '#73e0ff' : 'rgba(115, 224, 255, 0.42)', 14);
-      drawText(category.headerLabel, GRID_W - 340, 18, '#df84ff', 14);
+      badgeX += drawStatusBadge(deviceStatus.networkOnline ? 'NET' : 'OFFLINE', badgeX, 32, deviceStatus.networkOnline, '#73e0ff') + 6;
+      badgeX += drawStatusBadge(currentState.ecgLeadsOff ? 'ECG OFF' : 'ECG OK', badgeX, 32, !currentState.ecgLeadsOff, '#6eff6e') + 6;
+      badgeX += drawStatusBadge(currentState.spo2ProbeOff ? 'SpO2 OFF' : 'SpO2 OK', badgeX, 32, !currentState.spo2ProbeOff, '#00e5ff') + 6;
+      drawStatusBadge(currentState.tempProbeOff ? 'TEMP OFF' : 'TEMP OK', badgeX, 32, !currentState.tempProbeOff, '#ffb000');
+      drawText(category.headerLabel, GRID_W - 356, 18, '#df84ff', 14);
+      drawNetworkIcon(GRID_W - 510, 9, deviceStatus.networkOnline);
+      drawBatteryIcon(GRID_W - 482, 8, 18, 10, deviceStatus.batteryLevel, deviceStatus.charging);
+      drawText(`${deviceStatus.batteryLevel}%`, GRID_W - 458, 18, '#d0d7e2', 11);
       drawText(stamp, GRID_W - 92, 18, '#f5f5f5', 12, 'right');
       drawText(`${currentState.ecgSweepSpeed} mm/s`, GRID_W - 12, 18, '#f5f5f5', 14, 'right');
     }
@@ -279,14 +362,27 @@
       const showTempOff = currentState.tempProbeOff;
       const diagnosticVisible = currentState.showDiagnostic;
       const nibpNow = Date.now();
-      const nibpIsAuto = display.nibpIntervalMs > 0;
-      const nibpPhase = nibpIsAuto ? nibpNow % display.nibpIntervalMs : 0;
-      const nibpMeasuring = nibpIsAuto && nibpPhase < display.nibpMeasureMs;
-      const nibpModeText = nibpMeasuring ? 'Measuring...' : display.nibpMode;
+      const nibpMeasuring = Boolean(currentState.nibpMeasurementActive);
+      const nibpProgress = nibpMeasuring
+        ? Math.min(1, Math.max(0, (nibpNow - currentState.nibpMeasurementStartedAt) / Math.max(1, display.nibpMeasureMs)))
+        : 0;
+      const nibpSeconds = currentState.nibpNextMeasurementAt > nibpNow ? Math.ceil((currentState.nibpNextMeasurementAt - nibpNow) / 1000) : 0;
+      const nibpModeText = nibpMeasuring
+        ? `Inflating ${Math.round(nibpProgress * 100)}%`
+        : display.nibpIntervalMs > 0
+          ? `${display.nibpMode} • ${nibpSeconds}s`
+          : display.nibpMode;
       const nibpValueText = nibpMeasuring ? '---/---' : `${currentState.sys}/${currentState.dia}`;
       const nibpMapText = nibpMeasuring ? '(---)' : `(${App.state.mapPressureValue(currentState)})`;
       const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
       const heartPulse = heartAge <= 180 ? 1 - heartAge / 180 : 0;
+      const respText = String(currentState.resp);
+      ctx.save();
+      ctx.font = `700 ${display.respValueSize}px Consolas, Monaco, monospace`;
+      const respWidth = ctx.measureText(respText).width;
+      ctx.restore();
+      const respValueX = GRID_W + (isNeonate ? 54 : 62);
+      const respUnitX = Math.min(GRID_W + 138, respValueX + respWidth + 10);
       ctx.fillStyle = '#05070b';
       ctx.fillRect(GRID_W, 0, PANEL_W, H);
       ctx.strokeStyle = '#1437a8';
@@ -321,8 +417,8 @@
       drawText(ecgValue, GRID_W + 252, diagnosticVisible ? 96 : 88, '#00ff33', currentState.ecgLeadsOff ? 72 : diagnosticVisible ? 84 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
-      drawText('rpm', GRID_W + 94, 134, '#ffee00', 12);
-      drawText(String(currentState.resp), GRID_W + (isNeonate ? 74 : 82), 170, '#ffee00', display.respValueSize);
+  drawText(respText, respValueX, 170, '#ffee00', display.respValueSize);
+  drawText('rpm', respUnitX, 132, '#ffee00', 10);
 
       drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
       drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
@@ -334,7 +430,7 @@
       drawText(showTempOff ? '--' : tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
 
       drawText('SpO2', GRID_W + 14, 206, '#00e5ff', 18);
-      drawText(spo2Value, GRID_W + 82, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
+      drawText(spo2Value, GRID_W + 70, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
       drawText('%', GRID_W + 258, 206, '#00e5ff', 18);
       for (let i = 0; i < 6; i += 1) {
         ctx.fillStyle = currentState.spo2ProbeOff
@@ -346,7 +442,7 @@
       }
 
       drawText('CO2', GRID_W + 14, 296, '#ff63ff', 18);
-      drawText(String(currentState.co2), GRID_W + 84, 338, '#ff63ff', isNeonate ? 50 : 56);
+  drawText(String(currentState.co2), GRID_W + 72, 338, '#ff63ff', isNeonate ? 50 : 56);
       drawText('mmHg', GRID_W + 212, 296, '#ff63ff', 18);
 
       drawText('IBP (1,2)', GRID_W + 14, 386, '#ff4d00', 18);
@@ -359,11 +455,23 @@
         drawText(channel2.unit, GRID_W + 212, 448, '#ff4d00', 18);
       }
 
-      drawText(display.nibpLabel, GRID_W + 14, 520, '#f5f5f5', isNeonate ? 16 : 18);
-      drawText('mmHg', GRID_W + 212, 520, '#bdbdbd', 18);
-      drawText(nibpValueText, GRID_W + 14, 566, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpValueSize);
-      drawText(nibpMapText, GRID_W + 210, 566, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpMapSize, 'right');
-      drawText(nibpModeText, GRID_W + 14, 595, nibpMeasuring ? '#ffee00' : '#d0d7e2', isNeonate ? 16 : 18);
+      drawText(display.nibpLabel, GRID_W + 14, 512, '#f5f5f5', isNeonate ? 16 : 18);
+      drawText('mmHg', GRID_W + 212, 512, '#bdbdbd', 18);
+      drawText(nibpValueText, GRID_W + 14, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpValueSize);
+      drawText(nibpMapText, GRID_W + 210, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpMapSize, 'right');
+      drawText(nibpModeText, GRID_W + 14, 570, nibpMeasuring ? '#ffee00' : '#d0d7e2', isNeonate ? 14 : 16);
+      if (nibpMeasuring) {
+        ctx.save();
+        ctx.strokeStyle = '#ffee00';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(GRID_W + 12.5, 578, 211, 13);
+        ctx.fillStyle = 'rgba(255, 238, 0, 0.18)';
+        ctx.fillRect(GRID_W + 14, 580.5, 208, 8);
+        ctx.fillStyle = '#ffee00';
+        ctx.fillRect(GRID_W + 14, 580.5, 208 * nibpProgress, 8);
+        drawText('CUFF', GRID_W + 228, 591, '#ffee00', 10);
+        ctx.restore();
+      }
     }
 
     function drawLabels(currentState) {

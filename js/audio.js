@@ -6,6 +6,7 @@
     let alarmPriority = 'none';
     let alarmPatternStep = 0;
     let nextAlarmToneAt = 0;
+    let nextNibpPumpAt = 0;
 
     const ALARM_PATTERNS = {
       critical: {
@@ -84,6 +85,12 @@
       playTone(980, 0.05, 0.022, 'sine');
     }
 
+    function nibpPumpTone() {
+      // short mechanical thump: low sawtooth body + brief square click
+      playTone(92, 0.058, 0.10, 'sawtooth');
+      playTone(215, 0.025, 0.05, 'square');
+    }
+
     function resetAlarmPattern(now) {
       alarmPatternStep = 0;
       nextAlarmToneAt = now;
@@ -127,6 +134,16 @@
       if (now - currentState.lastHeartBeatAt >= beatInterval) {
         heartBeatTone();
         currentState.lastHeartBeatAt = now;
+      }
+
+      // NIBP cuff inflation pump sound
+      if (currentState.nibpMeasurementActive) {
+        if (now >= nextNibpPumpAt) {
+          nibpPumpTone();
+          nextNibpPumpAt = now + 780;
+        }
+      } else {
+        nextNibpPumpAt = 0;
       }
 
       if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {

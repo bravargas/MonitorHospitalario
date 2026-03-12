@@ -135,6 +135,9 @@
 
   if (pageType === 'control') {
     syncManager.broadcastState('full');
+    window.setInterval(() => {
+      App.state.tickDynamicState(Date.now(), { source: 'local' });
+    }, 250);
   }
 
   if (pageType === 'monitor') {

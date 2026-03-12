@@ -93,6 +93,53 @@
       App.state.setState({ ecgSweepSpeed: Number(event.target.value) }, { source: 'local' });
     });
 
+    document.getElementById('trendEvent')?.addEventListener('change', event => {
+      const eventName = event.target.value;
+      const preset = App.state.TREND_EVENTS[eventName];
+      if (document.getElementById('trendDurationSeconds')) {
+        document.getElementById('trendDurationSeconds').value = String(Math.round((preset?.durationMs || 0) / 1000));
+      }
+      if (document.getElementById('trendHoldSeconds')) {
+        document.getElementById('trendHoldSeconds').value = String(Math.round((preset?.holdMs || 0) / 1000));
+      }
+      if (document.getElementById('trendPresetHint')) {
+        document.getElementById('trendPresetHint').textContent = `${preset?.label || 'Event'} uses an ${App.state.getTrendProfileLabel(eventName).toLowerCase()} preset with ${Math.round((preset?.holdMs || 0) / 1000)}s hold.`;
+      }
+      App.state.setState(
+        {
+          trendEvent: eventName,
+          trendDurationOverrideMs: preset?.durationMs || 0,
+          trendHoldOverrideMs: preset?.holdMs || 0
+        },
+        { source: 'local' }
+      );
+    });
+
+    document.getElementById('trendDurationSeconds')?.addEventListener('input', event => {
+      const seconds = Math.max(0, Number(event.target.value) || 0);
+      App.state.setState({ trendDurationOverrideMs: Math.round(seconds * 1000) }, { source: 'local' });
+    });
+
+    document.getElementById('trendHoldSeconds')?.addEventListener('input', event => {
+      const seconds = Math.max(0, Number(event.target.value) || 0);
+      App.state.setState({ trendHoldOverrideMs: Math.round(seconds * 1000) }, { source: 'local' });
+    });
+
+    document.getElementById('btnStartTrend')?.addEventListener('click', () => {
+      const trendEvent = document.getElementById('trendEvent')?.value;
+      if (trendEvent) {
+        App.state.startTrend(trendEvent, Date.now(), { source: 'local' });
+      }
+    });
+
+    document.getElementById('btnStopTrend')?.addEventListener('click', () => {
+      App.state.stopTrend({ source: 'local' });
+    });
+
+    document.getElementById('btnNibpNow')?.addEventListener('click', () => {
+      App.state.startNibpMeasurement(Date.now(), { source: 'local' });
+    });
+
     const syncAlarmVolume = value => {
       const normalized = App.state.clamp(Number(value) || 0, 0, 100);
       App.state.setState({ alarmVolume: normalized / 100 }, { source: 'local' });
@@ -181,6 +228,24 @@
         if (document.getElementById('ecgSweepSpeed')) {
           document.getElementById('ecgSweepSpeed').value = String(nextState.ecgSweepSpeed);
         }
+        if (document.getElementById('trendEvent')) {
+          document.getElementById('trendEvent').value = nextState.trendEvent === 'none' ? 'desaturation' : nextState.trendEvent;
+        }
+        if (document.getElementById('trendDurationSeconds')) {
+          const fallbackEvent = nextState.trendEvent === 'none' ? document.getElementById('trendEvent')?.value : nextState.trendEvent;
+          const durationMs = nextState.trendDurationOverrideMs || App.state.getTrendDuration(fallbackEvent, nextState);
+          document.getElementById('trendDurationSeconds').value = String(Math.max(1, Math.round(durationMs / 1000)));
+        }
+        if (document.getElementById('trendHoldSeconds')) {
+          const fallbackEvent = nextState.trendEvent === 'none' ? document.getElementById('trendEvent')?.value : nextState.trendEvent;
+          const holdMs = nextState.trendHoldOverrideMs || App.state.getTrendHold(fallbackEvent, nextState);
+          document.getElementById('trendHoldSeconds').value = String(Math.max(0, Math.round(holdMs / 1000)));
+        }
+        if (document.getElementById('trendPresetHint')) {
+          const selectedEvent = document.getElementById('trendEvent')?.value || 'desaturation';
+          const preset = App.state.TREND_EVENTS[selectedEvent];
+          document.getElementById('trendPresetHint').textContent = `${preset?.label || 'Event'} uses an ${App.state.getTrendProfileLabel(selectedEvent).toLowerCase()} preset with ${Math.round((preset?.holdMs || 0) / 1000)}s hold.`;
+        }
 
         if (document.getElementById('mHr')) document.getElementById('mHr').textContent = nextState.hr;
         if (document.getElementById('mSpO2')) document.getElementById('mSpO2').textContent = nextState.spo2;
@@ -189,6 +254,7 @@
 
         const alarmBanner = document.getElementById('alarmBanner');
         const alarmText = document.getElementById('alarmText');
+        const trendStatus = document.getElementById('trendStatus');
         if (alarmBanner && alarmText) {
           if (nextState.activeAlarms.length === 0) {
             alarmBanner.style.display = 'none';
@@ -200,6 +266,17 @@
             const priority = App.alarms.getAlarmPriority(nextState.activeAlarms);
             alarmBanner.classList.toggle('advisory', priority === 'advisory');
             alarmBanner.classList.toggle('danger', priority !== 'advisory');
+          }
+        }
+        if (trendStatus) {
+          if (!nextState.trendRunning) {
+            trendStatus.textContent = 'No active event';
+          } else {
+            const event = App.state.TREND_EVENTS[nextState.trendEvent];
+            const elapsed = Math.max(0, Date.now() - nextState.trendStartedAt);
+            const totalMs = nextState.trendDurationMs + nextState.trendHoldMs + (event?.returnToBaseline === false ? 0 : nextState.trendDurationMs);
+            const remaining = Math.max(0, Math.ceil((totalMs - elapsed) / 1000));
+            trendStatus.textContent = `${event?.label || 'Active event'} • ${App.state.getTrendProfileLabel(nextState.trendEvent)} • ${App.state.getTrendPhaseLabel(nextState.trendPhase)} • ${remaining}s remaining`;
           }
         }
       },

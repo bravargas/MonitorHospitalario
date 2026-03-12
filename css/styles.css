@@ -247,6 +247,30 @@ canvas {
   padding: 12px;
 }
 
+.control-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.inline-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.subtle-note {
+  padding: 8px 0 0;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.compact-top {
+  margin-bottom: 0;
+}
+
 .control-top {
   display: flex;
   justify-content: space-between;
@@ -280,6 +304,14 @@ canvas {
 .control select {
   width: 150px;
   text-align: left;
+}
+
+#trendDurationSeconds {
+  width: 78px;
+}
+
+#trendHoldSeconds {
+  width: 78px;
 }
 
 .control input[type="range"] {

@@ -268,9 +268,7 @@
       const display = category.display;
       const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
       let badgeX = 108;
-      const nibpHeaderMode = display.nibpIntervalMs > 0 ? 'AUTO' : 'MANUAL';
-      drawText(nibpHeaderMode, 18, 18, '#8cff8c', 14);
-      drawText('BrainMed', 18, 32, '#73e0ff', 12);
+      drawText('BrainMed', 18, 18, '#8cff8c', 14);
       drawText(`x${currentState.ecgGain}`, 108, 18, '#8cff8c', 14);
       drawText('MON', 152, 18, '#8cff8c', 14);
       drawText(patientName, 218, 18, hasPatientName ? '#73e0ff' : 'rgba(115, 224, 255, 0.42)', 14);
@@ -339,12 +337,12 @@
     function drawSweepHead() {
       ctx.save();
       const x = sweepX;
-      const gradient = ctx.createLinearGradient(x - 18, 0, x + 18, 0);
+      const gradient = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
       gradient.addColorStop(0, 'rgba(255,255,255,0)');
       gradient.addColorStop(0.5, 'rgba(255,255,255,0.08)');
       gradient.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = gradient;
-      ctx.fillRect(Math.max(0, x - 18), 0, 36, H);
+      ctx.fillRect(Math.max(0, x - 12), 0, 24, H);
       ctx.restore();
     }
 
@@ -382,7 +380,7 @@
       const respWidth = ctx.measureText(respText).width;
       ctx.restore();
       const respValueX = GRID_W + (isNeonate ? 54 : 62);
-      const respUnitX = Math.min(GRID_W + 138, respValueX + respWidth + 10);
+      const respUnitX = Math.min(GRID_W + 128, respValueX + respWidth + 10);
       ctx.fillStyle = '#05070b';
       ctx.fillRect(GRID_W, 0, PANEL_W, H);
       ctx.strokeStyle = '#1437a8';
@@ -417,28 +415,34 @@
       drawText(ecgValue, GRID_W + 252, diagnosticVisible ? 96 : 88, '#00ff33', currentState.ecgLeadsOff ? 72 : diagnosticVisible ? 84 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
+      drawText('rpm', GRID_W + 14, 152, '#ffee00', 18);
   drawText(respText, respValueX, 170, '#ffee00', display.respValueSize);
-  drawText('rpm', respUnitX, 132, '#ffee00', 10);
 
       drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
       drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
-      drawText(showTempOff ? '--' : tempValue, GRID_W + 258, 150, '#ffb000', 22, 'right');
-      drawText(showTempOff ? '' : '°C', GRID_W + 284, 150, '#ffb000', 12, 'right');
-      drawText('T2', GRID_W + 166, 166, '#ffb000', 14);
-      drawText(showTempOff ? '--' : tempProbe2.toFixed(1), GRID_W + 258, 166, '#ffb000', 18, 'right');
+      const tempC = currentState.temp;
+      const tempDisplay = currentState.tempUnit === 'fahrenheit' ? (tempC * 9/5 + 32).toFixed(1) : tempC.toFixed(1);
+      const tempUnit = currentState.tempUnit === 'fahrenheit' ? '°F' : '°C';
+      drawText(showTempOff ? '--' : tempDisplay, GRID_W + 245, 150, '#ffb000', 22, 'right');
+      drawText(showTempOff ? '' : tempUnit, GRID_W + 284, 150, '#ffb000', 22, 'right');
+      const tempProbe2C = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
+      const tempProbe2Display = currentState.tempUnit === 'fahrenheit' ? (tempProbe2C * 9/5 + 32).toFixed(1) : tempProbe2C.toFixed(1);
+      drawText('T2', GRID_W + 166, 165, '#ffb000', 14);
+      drawText(showTempOff ? '--' : tempProbe2Display, GRID_W + 245, 165, '#ffb000', 18, 'right');
+      const tempDeltaDisplay = currentState.tempUnit === 'fahrenheit' ? Math.abs((tempC - tempProbe2C) * 9/5).toFixed(1) : Math.abs(currentState.temp - tempProbe2C).toFixed(1);
       drawText('TD', GRID_W + 166, 178, '#ffb000', 14);
-      drawText(showTempOff ? '--' : tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
+      drawText(showTempOff ? '--' : tempDeltaDisplay, GRID_W + 245, 178, '#ffb000', 18, 'right');
 
       drawText('SpO2', GRID_W + 14, 206, '#00e5ff', 18);
       drawText(spo2Value, GRID_W + 70, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
-      drawText('%', GRID_W + 258, 206, '#00e5ff', 18);
+      drawText('%', GRID_W + 284, 206, '#00e5ff', 18, 'right');
       for (let i = 0; i < 6; i += 1) {
         ctx.fillStyle = currentState.spo2ProbeOff
           ? 'rgba(0,229,255,0.15)'
           : i < Math.max(1, Math.round(currentState.spo2 / 17))
             ? '#00e5ff'
             : 'rgba(0,229,255,0.25)';
-        ctx.fillRect(GRID_W + 250, 252 - i * 8, 16, 5);
+        ctx.fillRect(GRID_W + 268, 252 - i * 8, 16, 5);
       }
 
       drawText('CO2', GRID_W + 14, 296, '#ff63ff', 18);
@@ -456,10 +460,53 @@
       }
 
       drawText(display.nibpLabel, GRID_W + 14, 512, '#f5f5f5', isNeonate ? 16 : 18);
-      drawText('mmHg', GRID_W + 212, 512, '#bdbdbd', 18);
+      drawText('mmHg', GRID_W + 134, 512, '#bdbdbd', 14);
+      
+      // Temperature Probe Off badge - top-right corner of TEMP section
+      if (currentState.tempProbeOff) {
+        ctx.save();
+        ctx.font = '700 10px Consolas, Monaco, monospace';
+        const tbw = ctx.measureText('Probe Off').width + 12;
+        const tbx = GRID_W + 284 - tbw;
+        const tby = 128;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+        ctx.fillRect(tbx, tby - 9, tbw, 12);
+        ctx.strokeStyle = '#ffee00';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(tbx + 0.5, tby - 8.5, tbw - 1, 11);
+        ctx.fillStyle = '#ffee00';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Probe Off', tbx + 6, tby);
+        ctx.restore();
+      }
+      
+      // NIBP mode badge - right-aligned with temperature symbol, badge style
+      ctx.save();
+      ctx.font = '700 10px Consolas, Monaco, monospace';
+      const nibpIsAuto = display.nibpIntervalMs > 0;
+      const nibpModeLabelText = nibpIsAuto ? 'AUTO' : 'MANUAL';
+      const nibpBadgeColor = nibpIsAuto ? '#6eff6e' : '#ffee00';
+      const nibpBw = ctx.measureText(nibpModeLabelText).width + 12;
+      const nibpBx = GRID_W + 284 - nibpBw;
+      const nibpBy = 512;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+      ctx.fillRect(nibpBx, nibpBy - 9, nibpBw, 12);
+      ctx.strokeStyle = nibpBadgeColor;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(nibpBx + 0.5, nibpBy - 8.5, nibpBw - 1, 11);
+      ctx.fillStyle = nibpBadgeColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(nibpModeLabelText, nibpBx + 6, nibpBy);
+      ctx.restore();
+      
       drawText(nibpValueText, GRID_W + 14, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpValueSize);
       drawText(nibpMapText, GRID_W + 210, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpMapSize, 'right');
-      drawText(nibpModeText, GRID_W + 14, 570, nibpMeasuring ? '#ffee00' : '#d0d7e2', isNeonate ? 14 : 16);
+      // Only show mode text when actively measuring (inflating)
+      if (nibpMeasuring) {
+        drawText(nibpModeText, GRID_W + 14, 570, '#ffee00', isNeonate ? 14 : 16);
+      }
       if (nibpMeasuring) {
         ctx.save();
         ctx.strokeStyle = '#ffee00';
@@ -474,15 +521,50 @@
       }
     }
 
+    function drawProbeOffBadge(cx, yBase) {
+      ctx.save();
+      ctx.font = '700 10px Consolas, Monaco, monospace';
+      const tw = ctx.measureText('Probe Off').width + 12;
+      const bx = cx - tw / 2;
+      const by = yBase + 3;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+      ctx.fillRect(bx, by - 9, tw, 12);
+      ctx.strokeStyle = '#ffee00';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx + 0.5, by - 8.5, tw - 1, 11);
+      ctx.fillStyle = '#ffee00';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('Probe Off', bx + 6, by);
+      ctx.restore();
+    }
+
     function drawLabels(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
-      drawLabel('II', 14, HEADER_H + 22, '#00ff33', 18);
+      
+      // Left-side trace labels
+      if (currentState.ecgLeadsOff) {
+        drawProbeOffBadge(GRID_W / 2, HEADER_H + ROW_H * 0.58);
+        drawProbeOffBadge(GRID_W / 2, HEADER_H + ROW_H * 1.58);
+        drawProbeOffBadge(GRID_W / 2, HEADER_H + ROW_H * 2.58);
+      } else {
+        drawLabel('II', 14, HEADER_H + 22, '#00ff33', 18);
+      }
+      
       if (currentState.showDiagnostic) {
         drawLabel('Diagnostic', 360, HEADER_H + 22, '#7cff7c', 17);
       }
-      drawLabel('I', 14, HEADER_H + ROW_H + 22, '#00ff33', 18);
-      drawLabel('V', 14, HEADER_H + ROW_H * 2 + 22, '#00ff33', 18);
-      drawLabel('Pleth', 14, HEADER_H + ROW_H * 3 + 22, '#00e5ff', 18);
+      if (!currentState.ecgLeadsOff) {
+        drawLabel('I', 14, HEADER_H + ROW_H + 22, '#00ff33', 18);
+        drawLabel('V', 14, HEADER_H + ROW_H * 2 + 22, '#00ff33', 18);
+      }
+      
+      if (currentState.spo2ProbeOff) {
+        drawProbeOffBadge(GRID_W / 2, HEADER_H + ROW_H * 3.58);
+      } else {
+        drawLabel('Pleth', 14, HEADER_H + ROW_H * 3 + 22, '#00e5ff', 18);
+      }
+      
       drawLabel('CO2', 14, HEADER_H + ROW_H * 4 + 22, '#ff63ff', 18);
       drawLabel(channel2.label, 14, HEADER_H + ROW_H * 5 + 22, '#ff4d00', 18);
     }

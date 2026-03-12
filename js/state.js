@@ -200,6 +200,7 @@
     ecgLeadsOff: false,
     spo2ProbeOff: false,
     tempProbeOff: false,
+    tempUnit: 'celsius',
     activeAlarms: [],
     lastAlarmBeep: 0,
     lastHeartBeatAt: 0,
@@ -287,6 +288,10 @@
         patch[key] = Boolean(input[key]);
       }
     });
+
+    if ('tempUnit' in input) {
+      patch.tempUnit = input.tempUnit === 'fahrenheit' ? 'fahrenheit' : 'celsius';
+    }
 
     if ('alarmVolume' in input) {
       const raw = Number(input.alarmVolume);
@@ -418,6 +423,7 @@
       ecgLeadsOff: state.ecgLeadsOff,
       spo2ProbeOff: state.spo2ProbeOff,
       tempProbeOff: state.tempProbeOff,
+      tempUnit: state.tempUnit,
       running: state.running,
       showGrid: state.showGrid,
       showDiagnostic: state.showDiagnostic,

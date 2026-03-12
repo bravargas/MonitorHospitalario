@@ -93,6 +93,10 @@
       App.state.setState({ ecgSweepSpeed: Number(event.target.value) }, { source: 'local' });
     });
 
+    document.getElementById('tempUnit')?.addEventListener('change', event => {
+      App.state.setState({ tempUnit: event.target.value }, { source: 'local' });
+    });
+
     document.getElementById('trendEvent')?.addEventListener('change', event => {
       const eventName = event.target.value;
       const preset = App.state.TREND_EVENTS[eventName];

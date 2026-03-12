@@ -26,6 +26,9 @@
     alarmsEnabled: true,
     soundEnabled: true,
     alarmVolume: 0.5,
+    ecgLeadsOff: false,
+    spo2ProbeOff: false,
+    tempProbeOff: false,
     activeAlarms: [],
     lastAlarmBeep: 0,
     lastHeartBeatAt: 0,
@@ -82,7 +85,7 @@
       patch[key] = roundByStep(clamp(raw, cfg.min, cfg.max), cfg.step);
     });
 
-    ['alarmsEnabled', 'soundEnabled', 'running', 'showGrid', 'showDiagnostic'].forEach(key => {
+    ['alarmsEnabled', 'soundEnabled', 'running', 'showGrid', 'showDiagnostic', 'ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff'].forEach(key => {
       if (key in input) {
         patch[key] = Boolean(input[key]);
       }
@@ -142,6 +145,9 @@
       alarmsEnabled: state.alarmsEnabled,
       soundEnabled: state.soundEnabled,
       alarmVolume: state.alarmVolume,
+      ecgLeadsOff: state.ecgLeadsOff,
+      spo2ProbeOff: state.spo2ProbeOff,
+      tempProbeOff: state.tempProbeOff,
       running: state.running,
       showGrid: state.showGrid,
       showDiagnostic: state.showDiagnostic,

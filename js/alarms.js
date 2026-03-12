@@ -7,6 +7,9 @@
     }
 
     const alarms = [];
+    if (currentState.ecgLeadsOff) alarms.push('ECG leads off');
+    if (currentState.spo2ProbeOff) alarms.push('Sensor SpO2 desconectado');
+    if (currentState.tempProbeOff) alarms.push('Sonda TEMP desconectada');
     if (currentState.spo2 < 90) alarms.push(`SpO2 baja (${currentState.spo2}%)`);
     if (currentState.hr > 130) alarms.push(`Taquicardia (${currentState.hr} bpm)`);
     if (currentState.hr < 45) alarms.push(`Bradicardia (${currentState.hr} bpm)`);
@@ -28,6 +31,17 @@
     return alarms.some(alarm => alarm.includes('SpO2 baja') || alarm.includes('Hipotensión'));
   }
 
+  function getAlarmPriority(alarms) {
+    if (!alarms || alarms.length === 0) {
+      return 'none';
+    }
+    if (isCriticalAlarm(alarms)) {
+      return 'critical';
+    }
+    const hasPhysiologicAlarm = alarms.some(alarm => !alarm.includes('desconect') && !alarm.includes('leads off'));
+    return hasPhysiologicAlarm ? 'warning' : 'advisory';
+  }
+
   function refreshDerivedState() {
     const currentState = App.state.getState();
     currentState.activeAlarms = evaluateAlarms(currentState);
@@ -36,6 +50,7 @@
 
   App.alarms = {
     evaluateAlarms,
+    getAlarmPriority,
     isCriticalAlarm,
     refreshDerivedState
   };

@@ -6,6 +6,8 @@
   let audioManager = null;
   let syncManager = null;
   let previousChannel2Type = App.state.getState().channel2Type;
+  let previousEcgLeadsOff = App.state.getState().ecgLeadsOff;
+  let previousSpo2ProbeOff = App.state.getState().spo2ProbeOff;
 
   function updateMonitorStatus(message, variant = 'warning') {
     const syncStatus = document.getElementById('syncStatus');
@@ -31,7 +33,7 @@
     }
 
     indicator.textContent = currentState.activeAlarms[0];
-    indicator.classList.add(App.alarms.isCriticalAlarm(currentState.activeAlarms) ? 'danger' : 'warning');
+    indicator.classList.add(App.alarms.getAlarmPriority(currentState.activeAlarms));
   }
 
   function refreshUi() {
@@ -54,8 +56,16 @@
     if (renderer && previousChannel2Type !== currentState.channel2Type) {
       renderer.clearTrace('channel2');
     }
+    if (renderer && previousEcgLeadsOff !== currentState.ecgLeadsOff) {
+      renderer.clearTrace('ecg');
+    }
+    if (renderer && previousSpo2ProbeOff !== currentState.spo2ProbeOff) {
+      renderer.clearTrace('pleth');
+    }
 
     previousChannel2Type = currentState.channel2Type;
+    previousEcgLeadsOff = currentState.ecgLeadsOff;
+    previousSpo2ProbeOff = currentState.spo2ProbeOff;
     refreshUi();
 
     if (syncManager && pageType === 'control' && meta.source === 'local' && !meta.skipBroadcast) {

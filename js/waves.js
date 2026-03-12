@@ -92,6 +92,8 @@
   }
 
   function sample(type, currentState, time) {
+    if (type === 'ecg' && currentState.ecgLeadsOff) return sampleFlat();
+    if (type === 'pleth' && currentState.spo2ProbeOff) return sampleFlat();
     if (type === 'ecg') return sampleEcg(currentState, time);
     if (type === 'resp') return sampleResp(currentState, time);
     if (type === 'pleth') return samplePleth(currentState, time);

@@ -11,6 +11,7 @@
   --magenta: #ff63ff;
   --orange: #ff4d00;
   --blue: #1437a8;
+  --advisory: #7dd3fc;
   --danger: #ff5252;
 }
 
@@ -140,6 +141,11 @@ button.active {
   box-shadow: 0 0 12px rgba(255, 82, 82, 0.7);
 }
 
+.status-pill.advisory::before {
+  background: var(--advisory);
+  box-shadow: 0 0 12px rgba(125, 211, 252, 0.7);
+}
+
 .monitor-page {
   max-width: 1280px;
 }
@@ -211,6 +217,30 @@ canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.toggle-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mini-toggle {
+  padding: 10px 12px;
+}
+
+.advisory-panel {
+  border-color: rgba(125, 211, 252, 0.28);
+}
+
+.advisory-label {
+  width: auto;
+  color: var(--advisory);
+}
+
+.note.advisory {
+  border-color: rgba(125, 211, 252, 0.3);
+  background: rgba(8, 47, 73, 0.28);
+  color: #dbeafe;
 }
 
 .control {

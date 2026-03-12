@@ -127,6 +127,18 @@
       ctx.restore();
     }
 
+    function drawLabel(text, x, y, color, size = 18) {
+      ctx.save();
+      ctx.font = `700 ${size}px Consolas, Monaco, monospace`;
+      const metrics = ctx.measureText(text);
+      const width = Math.ceil(metrics.width) + 12;
+      const height = size + 8;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+      ctx.fillRect(x - 6, y - size + 2, width, height);
+      ctx.restore();
+      drawText(text, x, y, color, size);
+    }
+
     function drawHeartIcon(x, y, size, pulse) {
       const baseScale = size / 16;
       const scale = baseScale * (0.9 + pulse * 0.18);
@@ -200,6 +212,9 @@
       const tempValue = currentState.temp.toFixed(1);
       const tempProbe2 = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
       const tempDelta = Math.abs(currentState.temp - tempProbe2).toFixed(1);
+      const ecgValue = currentState.ecgLeadsOff ? '---' : String(currentState.hr);
+      const spo2Value = currentState.spo2ProbeOff ? '---' : String(currentState.spo2);
+      const showTempOff = currentState.tempProbeOff;
       const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
       const heartPulse = heartAge <= 180 ? 1 - heartAge / 180 : 0;
       ctx.fillStyle = '#05070b';
@@ -225,26 +240,32 @@
 
       drawText('ECG', GRID_W + 14, 28, '#6eff6e', 18);
       drawText('bpm', GRID_W + 14, 46, '#6eff6e', 18);
-      drawHeartIcon(GRID_W + 36, 76, 10, heartPulse);
-      drawText(String(currentState.hr), GRID_W + 230, 88, '#00ff33', 96, 'right');
+      if (!currentState.ecgLeadsOff) {
+        drawHeartIcon(GRID_W + 36, 76, 10, heartPulse);
+      }
+      drawText(ecgValue, GRID_W + 230, 88, '#00ff33', currentState.ecgLeadsOff ? 72 : 96, 'right');
 
       drawText('RESP', GRID_W + 14, 134, '#ffee00', 18);
       drawText(String(currentState.resp), GRID_W + 90, 170, '#ffee00', 56);
 
       drawText('TEMP', GRID_W + 166, 132, '#ffb000', 18);
       drawText('T1', GRID_W + 166, 150, '#ffb000', 14);
-      drawText(tempValue, GRID_W + 258, 150, '#ffb000', 22, 'right');
-      drawText('°C', GRID_W + 284, 150, '#ffb000', 12, 'right');
+      drawText(showTempOff ? '--' : tempValue, GRID_W + 258, 150, '#ffb000', 22, 'right');
+      drawText(showTempOff ? '' : '°C', GRID_W + 284, 150, '#ffb000', 12, 'right');
       drawText('T2', GRID_W + 166, 166, '#ffb000', 14);
-      drawText(tempProbe2.toFixed(1), GRID_W + 258, 166, '#ffb000', 18, 'right');
+      drawText(showTempOff ? '--' : tempProbe2.toFixed(1), GRID_W + 258, 166, '#ffb000', 18, 'right');
       drawText('TD', GRID_W + 166, 178, '#ffb000', 14);
-      drawText(tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
+      drawText(showTempOff ? '--' : tempDelta, GRID_W + 258, 178, '#ffb000', 18, 'right');
 
       drawText('SpO2', GRID_W + 14, 206, '#00e5ff', 18);
-      drawText(String(currentState.spo2), GRID_W + 90, 248, '#00e5ff', 56);
+      drawText(spo2Value, GRID_W + 90, 248, '#00e5ff', currentState.spo2ProbeOff ? 46 : 56);
       drawText('%', GRID_W + 258, 206, '#00e5ff', 18);
       for (let i = 0; i < 6; i += 1) {
-        ctx.fillStyle = i < Math.max(1, Math.round(currentState.spo2 / 17)) ? '#00e5ff' : 'rgba(0,229,255,0.25)';
+        ctx.fillStyle = currentState.spo2ProbeOff
+          ? 'rgba(0,229,255,0.15)'
+          : i < Math.max(1, Math.round(currentState.spo2 / 17))
+            ? '#00e5ff'
+            : 'rgba(0,229,255,0.25)';
         ctx.fillRect(GRID_W + 250, 252 - i * 8, 16, 5);
       }
 
@@ -271,15 +292,15 @@
 
     function drawLabels(currentState) {
       const channel2 = App.state.getChannel2Display(currentState);
-      drawText('II   XI', 14, 24, '#00ff33', 18);
+      drawLabel('II   XI', 14, 24, '#00ff33', 18);
       if (currentState.showDiagnostic) {
-        drawText('Diagnostic', 150, 24, '#7cff7c', 18);
+        drawLabel('Diagnostic', 150, 24, '#7cff7c', 18);
       }
-      drawText('RESP', 14, ROW_H + 24, '#ffee00', 18);
-      drawText('Pleth', 14, ROW_H * 2 + 24, '#00e5ff', 18);
-      drawText('CO2', 14, ROW_H * 3 + 24, '#ff63ff', 18);
-      drawText('CH1:Art', 14, ROW_H * 4 + 24, '#ff4d00', 18);
-      drawText(channel2.label, 14, ROW_H * 5 + 24, '#ff4d00', 18);
+      drawLabel('RESP', 14, ROW_H + 22, '#ffee00', 18);
+      drawLabel('Pleth', 14, ROW_H * 2 + 16, '#00e5ff', 18);
+      drawLabel('CO2', 14, ROW_H * 3 + 22, '#ff63ff', 18);
+      drawLabel('CH1:Art', 14, ROW_H * 4 + 22, '#ff4d00', 18);
+      drawLabel(channel2.label, 14, ROW_H * 5 + 22, '#ff4d00', 18);
     }
 
     function renderFrame(dt) {
@@ -293,9 +314,9 @@
       if (currentState.showGrid) {
         drawGrid();
       }
-      drawLabels(currentState);
       traceDefs.forEach(def => drawSweepTrace(def, currentState));
       drawSweepHead();
+      drawLabels(currentState);
       drawPanel(currentState);
 
       if (currentState.activeAlarms.length) {

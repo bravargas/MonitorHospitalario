@@ -3,8 +3,37 @@
 
   function createAudioManager({ enabled = true } = {}) {
     let audioCtx = null;
+    let alarmPriority = 'none';
+    let alarmPatternStep = 0;
+    let nextAlarmToneAt = 0;
 
-    function playTone(frequency, duration, volumeScale) {
+    const ALARM_PATTERNS = {
+      critical: {
+        cycle: 980,
+        steps: [
+          { offset: 0, frequency: 980, duration: 0.09, volume: 0.085, type: 'square' },
+          { offset: 170, frequency: 880, duration: 0.09, volume: 0.08, type: 'square' },
+          { offset: 340, frequency: 980, duration: 0.09, volume: 0.085, type: 'square' },
+          { offset: 510, frequency: 880, duration: 0.09, volume: 0.08, type: 'square' }
+        ]
+      },
+      warning: {
+        cycle: 1850,
+        steps: [
+          { offset: 0, frequency: 740, duration: 0.08, volume: 0.06, type: 'triangle' },
+          { offset: 210, frequency: 660, duration: 0.08, volume: 0.055, type: 'triangle' },
+          { offset: 420, frequency: 740, duration: 0.08, volume: 0.06, type: 'triangle' }
+        ]
+      },
+      advisory: {
+        cycle: 2400,
+        steps: [
+          { offset: 0, frequency: 520, duration: 0.1, volume: 0.04, type: 'sine' }
+        ]
+      }
+    };
+
+    function playTone(frequency, duration, volumeScale, type = 'square') {
       const currentState = App.state.getState();
       const ctx = ensureContext();
       if (!ctx || !currentState.soundEnabled) {
@@ -13,7 +42,7 @@
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'square';
+      osc.type = type;
       osc.frequency.value = frequency;
       gain.gain.setValueAtTime(0.0001, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, currentState.alarmVolume * volumeScale), ctx.currentTime + 0.005);
@@ -50,17 +79,42 @@
       ensureContext();
     }
 
-    function beep(frequency = 880, duration = 0.12) {
-      const currentState = App.state.getState();
-      if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
+    function heartBeatTone() {
+      playTone(1320, 0.03, 0.032, 'triangle');
+      playTone(980, 0.05, 0.022, 'sine');
+    }
+
+    function resetAlarmPattern(now) {
+      alarmPatternStep = 0;
+      nextAlarmToneAt = now;
+    }
+
+    function processAlarmPattern(now, priority) {
+      const pattern = ALARM_PATTERNS[priority];
+      if (!pattern) {
+        alarmPriority = 'none';
+        alarmPatternStep = 0;
+        nextAlarmToneAt = 0;
         return;
       }
 
-      playTone(frequency, duration, 0.06);
-    }
+      if (alarmPriority !== priority) {
+        alarmPriority = priority;
+        resetAlarmPattern(now);
+      }
 
-    function heartBeatTone() {
-      playTone(1320, 0.045, 0.04);
+      while (now >= nextAlarmToneAt) {
+        const step = pattern.steps[alarmPatternStep];
+        playTone(step.frequency, step.duration, step.volume, step.type);
+
+        alarmPatternStep += 1;
+        if (alarmPatternStep >= pattern.steps.length) {
+          alarmPatternStep = 0;
+          nextAlarmToneAt += pattern.cycle - step.offset;
+        } else {
+          nextAlarmToneAt += pattern.steps[alarmPatternStep].offset - step.offset;
+        }
+      }
     }
 
     function process(now) {
@@ -76,15 +130,15 @@
       }
 
       if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
+        alarmPriority = 'none';
+        alarmPatternStep = 0;
+        nextAlarmToneAt = 0;
         return;
       }
 
-      const critical = App.alarms.isCriticalAlarm(currentState.activeAlarms);
-      const interval = critical ? 700 : 1200;
-      if (now - currentState.lastAlarmBeep >= interval) {
-        beep(critical ? 740 : 880);
-        currentState.lastAlarmBeep = now;
-      }
+      const priority = App.alarms.getAlarmPriority(currentState.activeAlarms);
+      processAlarmPattern(now, priority);
+      currentState.lastAlarmBeep = now;
     }
 
     ['click', 'keydown', 'touchstart'].forEach(eventName => {

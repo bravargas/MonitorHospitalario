@@ -63,6 +63,12 @@
       App.state.setState({ soundEnabled: event.target.checked }, { source: 'local' });
     });
 
+    ['ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff'].forEach(key => {
+      document.getElementById(key)?.addEventListener('change', event => {
+        App.state.setState({ [key]: event.target.checked }, { source: 'local' });
+      });
+    });
+
     document.getElementById('channel2Type')?.addEventListener('change', event => {
       App.state.setState({ channel2Type: event.target.value }, { source: 'local' });
     });
@@ -121,6 +127,11 @@
         if (document.getElementById('soundEnabled')) {
           document.getElementById('soundEnabled').checked = nextState.soundEnabled;
         }
+        ['ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff'].forEach(key => {
+          if (document.getElementById(key)) {
+            document.getElementById(key).checked = nextState[key];
+          }
+        });
         if (document.getElementById('channel2Type')) {
           document.getElementById('channel2Type').value = nextState.channel2Type;
         }
@@ -136,9 +147,13 @@
           if (nextState.activeAlarms.length === 0) {
             alarmBanner.style.display = 'none';
             alarmText.textContent = 'Sin alarmas';
+            alarmBanner.classList.remove('advisory', 'danger');
           } else {
             alarmBanner.style.display = 'block';
             alarmText.textContent = nextState.activeAlarms.join(' | ');
+            const priority = App.alarms.getAlarmPriority(nextState.activeAlarms);
+            alarmBanner.classList.toggle('advisory', priority === 'advisory');
+            alarmBanner.classList.toggle('danger', priority !== 'advisory');
           }
         }
       },
@@ -150,7 +165,7 @@
         element.textContent = status.message;
         element.classList.toggle('connected', Boolean(status.connected));
         element.classList.toggle('warning', !status.connected);
-        element.classList.remove('danger');
+        element.classList.remove('danger', 'advisory');
       }
     };
   }

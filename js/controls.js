@@ -364,6 +364,11 @@
       App.state.startNibpMeasurement(Date.now(), { source: 'local' });
     });
 
+    document.getElementById('btnAsystole')?.addEventListener('click', () => {
+      const currentState = App.state.getState();
+      App.state.setAsystole(!currentState.asystoleActive, { source: 'local' });
+    });
+
     const syncAlarmVolume = value => {
       const normalized = App.state.clamp(Number(value) || 0, 0, 100);
       App.state.setState({ alarmVolume: normalized / 100 }, { source: 'local' });
@@ -476,9 +481,16 @@
         }
 
         if (document.getElementById('mHr')) document.getElementById('mHr').textContent = nextState.hr;
+        if (document.getElementById('mHr') && nextState.asystoleActive) document.getElementById('mHr').textContent = '0';
         if (document.getElementById('mSpO2')) document.getElementById('mSpO2').textContent = nextState.spo2;
         if (document.getElementById('mResp')) document.getElementById('mResp').textContent = nextState.resp;
         if (document.getElementById('mBP')) document.getElementById('mBP').textContent = `${nextState.sys}/${nextState.dia}`;
+
+        const asystoleButton = document.getElementById('btnAsystole');
+        if (asystoleButton) {
+          asystoleButton.textContent = nextState.asystoleActive ? 'Stop asystole' : 'Start asystole';
+          asystoleButton.classList.toggle('active', nextState.asystoleActive);
+        }
 
         const alarmBanner = document.getElementById('alarmBanner');
         const alarmText = document.getElementById('alarmText');
@@ -497,7 +509,9 @@
           }
         }
         if (trendStatus) {
-          if (!nextState.trendRunning) {
+          if (nextState.asystoleActive) {
+            trendStatus.textContent = 'Asystole active';
+          } else if (!nextState.trendRunning) {
             trendStatus.textContent = 'No active event';
           } else {
             const event = App.state.TREND_EVENTS[nextState.trendEvent];

@@ -125,6 +125,15 @@
   }
 
   function sample(type, currentState, time) {
+    if (currentState.asystoleActive) {
+      if (type === 'ecg' || type === 'ecg-i' || type === 'ecg-ii' || type === 'ecg-v') {
+        return -0.005 + Math.sin(time * 5.5) * 0.0015;
+      }
+      if (type === 'art' || type === 'cvp' || type === 'pap' || type === 'icp') {
+        return sampleFlat();
+      }
+    }
+
     if ((type === 'ecg' || type === 'ecg-i' || type === 'ecg-ii' || type === 'ecg-v') && currentState.ecgLeadsOff) return sampleFlat();
     if (type === 'pleth' && currentState.spo2ProbeOff) return sampleFlat();
     if (type === 'ecg') return sampleEcg(currentState, time);

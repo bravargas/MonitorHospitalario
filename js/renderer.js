@@ -167,6 +167,14 @@
       ctx.restore();
     }
 
+    function measureTextWidth(text, size = 18) {
+      ctx.save();
+      ctx.font = `700 ${size}px Consolas, Monaco, monospace`;
+      const width = ctx.measureText(text).width;
+      ctx.restore();
+      return width;
+    }
+
     function drawLabel(text, x, y, color, size = 18) {
       ctx.save();
       ctx.font = `700 ${size}px Consolas, Monaco, monospace`;
@@ -265,23 +273,33 @@
       const hasPatientName = Boolean(currentState.patientName);
       const patientName = hasPatientName ? currentState.patientName : 'No name';
       const category = App.state.getPatientCategoryConfig(currentState);
-      const display = category.display;
       const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      const speedLabel = `${currentState.ecgSweepSpeed} mm/s`;
+      const batteryLabel = `${deviceStatus.batteryLevel}%`;
       let badgeX = 108;
+      let rightX = GRID_W - 12;
+
       drawText('BrainMed', 18, 18, '#8cff8c', 14);
       drawText(`x${currentState.ecgGain}`, 108, 18, '#8cff8c', 14);
       drawText('MON', 152, 18, '#8cff8c', 14);
       drawText(patientName, 218, 18, hasPatientName ? '#73e0ff' : 'rgba(115, 224, 255, 0.42)', 14);
+
+      drawText(batteryLabel, rightX, 18, '#d0d7e2', 11, 'right');
+      drawBatteryIcon(rightX - measureTextWidth(batteryLabel, 11) - 24, 8, 18, 10, deviceStatus.batteryLevel, deviceStatus.charging);
+      rightX -= measureTextWidth(batteryLabel, 11) + 44;
+
+      drawText(stamp, rightX, 18, '#f5f5f5', 12, 'right');
+      rightX -= measureTextWidth(stamp, 12) + 20;
+
+      drawText(speedLabel, rightX, 18, '#f5f5f5', 14, 'right');
+      rightX -= measureTextWidth(speedLabel, 14) + 22;
+
+      drawText(category.headerLabel, rightX, 18, '#df84ff', 14, 'right');
+
       badgeX += drawStatusBadge(deviceStatus.networkOnline ? 'NET' : 'OFFLINE', badgeX, 32, deviceStatus.networkOnline, '#73e0ff') + 6;
       badgeX += drawStatusBadge(currentState.ecgLeadsOff ? 'ECG OFF' : 'ECG OK', badgeX, 32, !currentState.ecgLeadsOff, '#6eff6e') + 6;
       badgeX += drawStatusBadge(currentState.spo2ProbeOff ? 'SpO2 OFF' : 'SpO2 OK', badgeX, 32, !currentState.spo2ProbeOff, '#00e5ff') + 6;
       drawStatusBadge(currentState.tempProbeOff ? 'TEMP OFF' : 'TEMP OK', badgeX, 32, !currentState.tempProbeOff, '#ffb000');
-      drawText(category.headerLabel, GRID_W - 356, 18, '#df84ff', 14);
-      drawNetworkIcon(GRID_W - 510, 9, deviceStatus.networkOnline);
-      drawBatteryIcon(GRID_W - 482, 8, 18, 10, deviceStatus.batteryLevel, deviceStatus.charging);
-      drawText(`${deviceStatus.batteryLevel}%`, GRID_W - 458, 18, '#d0d7e2', 11);
-      drawText(stamp, GRID_W - 92, 18, '#f5f5f5', 12, 'right');
-      drawText(`${currentState.ecgSweepSpeed} mm/s`, GRID_W - 12, 18, '#f5f5f5', 14, 'right');
     }
 
     function drawRightEdgeReferences(currentState) {

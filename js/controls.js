@@ -232,7 +232,6 @@
       if (atlsCaseStatus) {
         atlsCaseStatus.textContent = `${selectedCase.id} loaded. ${inferredCategory} defaults applied, then initial vitals and patient name were updated.`;
       }
-      setActiveTab('tabPatientControl');
     });
 
     loadAtlsDataset()

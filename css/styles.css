@@ -181,6 +181,33 @@ canvas {
   align-content: start;
 }
 
+.tab-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tab-button {
+  border-color: #344055;
+  background: #0f141c;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tab-button.active {
+  background: #1a2330;
+  color: var(--text);
+}
+
+.tab-panel {
+  display: none;
+  gap: 16px;
+}
+
+.tab-panel.active {
+  display: grid;
+}
+
 .section-title {
   font-size: 18px;
   font-weight: 700;
@@ -290,6 +317,10 @@ canvas {
   gap: 8px;
 }
 
+.value-box-wide {
+  width: 100%;
+}
+
 .control input[type="number"],
 .control select {
   width: 100px;
@@ -304,6 +335,10 @@ canvas {
 .control select {
   width: 150px;
   text-align: left;
+}
+
+.control select.case-select {
+  width: 100%;
 }
 
 #trendDurationSeconds {
@@ -385,7 +420,30 @@ canvas {
   text-decoration: none;
 }
 
+.case-preview {
+  display: grid;
+  gap: 8px;
+  color: #d9e1ea;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.case-preview.empty {
+  color: var(--muted);
+}
+
+.case-preview-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.case-preview-line {
+  color: #cbd5e1;
+}
+
 @media (max-width: 900px) {
+  .tab-bar,
   .toggle-row,
   .metric-grid,
   .quick {

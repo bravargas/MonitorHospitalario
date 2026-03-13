@@ -23,6 +23,12 @@
       </div>
 
       <div class="side">
+        <div class="tab-bar" role="tablist" aria-label="Control sections">
+          <button class="tab-button active" id="tabButtonPatientControl" type="button" role="tab" aria-selected="true" aria-controls="tabPatientControl" data-tab-target="tabPatientControl">Patient Control</button>
+          <button class="tab-button" id="tabButtonAtlsCases" type="button" role="tab" aria-selected="false" aria-controls="tabAtlsCases" data-tab-target="tabAtlsCases">ATLS Cases</button>
+        </div>
+
+        <div id="tabPatientControl" class="tab-panel active" role="tabpanel" aria-labelledby="tabButtonPatientControl">
         <div class="toggle-row">
           <div class="toggle">
             <span>Grid</span>
@@ -253,6 +259,32 @@
         <div class="note">
           Channel 2 can emulate CVP, ART2, PAP, ICP, or stay disconnected. Changes are sent to the student monitor in real time.
         </div>
+
+        </div>
+
+        <div id="tabAtlsCases" class="tab-panel" role="tabpanel" aria-labelledby="tabButtonAtlsCases">
+          <div class="control">
+            <div class="control-top">
+              <label for="atlsCaseSelect">ATLS case</label>
+              <div class="value-box value-box-wide">
+                <select id="atlsCaseSelect" class="case-select">
+                  <option value="">Select case...</option>
+                </select>
+              </div>
+            </div>
+            <div id="atlsCaseStatus" class="note inline-note subtle-note">Select a case and load it to apply patient type defaults plus the initial vitals from the dataset.</div>
+            <div class="control-actions">
+              <button id="btnLoadATLSCase" type="button" disabled>Load case</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <div class="control-top">
+              <label>Selected case</label>
+            </div>
+            <div id="atlsCasePreview" class="case-preview empty">No case selected.</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -262,6 +294,7 @@
   <script src="js/alarms.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/renderer.js"></script>
+  <script src="js/atls-cases-data.js"></script>
   <script src="js/controls.js"></script>
   <script src="js/sync.js"></script>
   <script src="js/app.js"></script>

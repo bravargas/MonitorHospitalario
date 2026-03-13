@@ -1,5 +1,126 @@
 (() => {
   const App = (window.MonitorApp = window.MonitorApp || {});
+  const ATLS_CASES_PATH = 'data/atls_fictitious_cases.json';
+
+  function inferPatientCategory(age) {
+    const normalizedAge = Number(age);
+    if (!Number.isFinite(normalizedAge)) {
+      return 'adult';
+    }
+    if (normalizedAge < 1) {
+      return 'neonate';
+    }
+    if (normalizedAge < 18) {
+      return 'pediatric';
+    }
+    return 'adult';
+  }
+
+  function getSuggestedPatientName(sex) {
+    const normalized = String(sex || '').trim().toLowerCase();
+    if (['femenino', 'female', 'mujer'].includes(normalized)) {
+      return 'Sofia Martin';
+    }
+    if (['masculino', 'male', 'hombre'].includes(normalized)) {
+      return 'David Martin';
+    }
+    return 'Martin';
+  }
+
+  function parseBloodPressure(value) {
+    const match = String(value || '').match(/(\d+)\s*\/\s*(\d+)/);
+    if (!match) {
+      return { sys: null, dia: null };
+    }
+    return {
+      sys: Number(match[1]),
+      dia: Number(match[2])
+    };
+  }
+
+  function buildAtlsVitalsPatch(initialVitals) {
+    const vitals = initialVitals && typeof initialVitals === 'object' ? initialVitals : {};
+    const pressure = parseBloodPressure(vitals.blood_pressure_mmHg);
+    const patch = {};
+
+    if (Number.isFinite(Number(vitals.heart_rate_bpm))) {
+      patch.hr = Number(vitals.heart_rate_bpm);
+    }
+    if (Number.isFinite(Number(vitals.respiratory_rate_bpm))) {
+      patch.resp = Number(vitals.respiratory_rate_bpm);
+    }
+    if (Number.isFinite(Number(vitals.spo2_percent))) {
+      patch.spo2 = Number(vitals.spo2_percent);
+    }
+    if (Number.isFinite(Number(vitals.temperature_c))) {
+      patch.temp = Number(vitals.temperature_c);
+    }
+    if (Number.isFinite(pressure.sys)) {
+      patch.sys = pressure.sys;
+    }
+    if (Number.isFinite(pressure.dia)) {
+      patch.dia = pressure.dia;
+    }
+
+    return patch;
+  }
+
+  function renderAtlsCasePreview(caseData) {
+    if (!caseData) {
+      return 'No case selected.';
+    }
+
+    const patient = caseData.patient || {};
+    const scenario = caseData.scenario || {};
+    const initialVitals = caseData.initial_vitals || {};
+    const patientCategory = inferPatientCategory(patient.age);
+    const bloodPressure = initialVitals.blood_pressure_mmHg || '--/--';
+    const gcs = Number.isFinite(Number(initialVitals.gcs)) ? initialVitals.gcs : '--';
+
+    return `
+      <div class="case-preview-title">${caseData.id} - ${caseData.title}</div>
+      <div class="case-preview-line">Patient: ${getSuggestedPatientName(patient.sex)} • ${patient.age ?? '--'} years • ${patientCategory}</div>
+      <div class="case-preview-line">Scenario: ${scenario.setting || 'N/A'} • ${scenario.chief_complaint || 'No complaint listed'}</div>
+      <div class="case-preview-line">Initial vitals: HR ${initialVitals.heart_rate_bpm ?? '--'} bpm • BP ${bloodPressure} mmHg • RESP ${initialVitals.respiratory_rate_bpm ?? '--'} rpm • SpO2 ${initialVitals.spo2_percent ?? '--'}% • Temp ${initialVitals.temperature_c ?? '--'} C • GCS ${gcs}</div>
+    `;
+  }
+
+  function loadAtlsDatasetWithXhr() {
+    return new Promise((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('GET', ATLS_CASES_PATH, true);
+      request.responseType = 'text';
+      request.onload = () => {
+        if ((request.status >= 200 && request.status < 300) || request.status === 0) {
+          try {
+            resolve(JSON.parse(request.responseText));
+          } catch (error) {
+            reject(error);
+          }
+          return;
+        }
+        reject(new Error(`HTTP ${request.status}`));
+      };
+      request.onerror = () => reject(new Error('Network error'));
+      request.send();
+    });
+  }
+
+  async function loadAtlsDataset() {
+    if (App.atlsCasesDataset && Array.isArray(App.atlsCasesDataset.cases)) {
+      return App.atlsCasesDataset;
+    }
+
+    try {
+      const response = await fetch(ATLS_CASES_PATH, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+      return loadAtlsDatasetWithXhr();
+    }
+  }
 
   function mountControlPage() {
     const currentState = App.state.getState();
@@ -8,6 +129,8 @@
       numeric: {},
       ranges: {}
     };
+    let atlsDataset = null;
+    let atlsCasesById = new Map();
 
     if (!controlsRoot) {
       return null;
@@ -46,6 +169,104 @@
     document.querySelectorAll('[data-profile]').forEach(button => {
       button.addEventListener('click', () => App.state.applyProfile(button.dataset.profile, { source: 'local' }));
     });
+
+    const setActiveTab = targetId => {
+      document.querySelectorAll('[data-tab-target]').forEach(button => {
+        const isActive = button.dataset.tabTarget === targetId;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', String(isActive));
+      });
+
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === targetId);
+      });
+    };
+
+    document.querySelectorAll('[data-tab-target]').forEach(button => {
+      button.addEventListener('click', () => setActiveTab(button.dataset.tabTarget));
+    });
+
+    const atlsCaseSelect = document.getElementById('atlsCaseSelect');
+    const atlsCaseStatus = document.getElementById('atlsCaseStatus');
+    const atlsCasePreview = document.getElementById('atlsCasePreview');
+    const loadAtlsCaseButton = document.getElementById('btnLoadATLSCase');
+
+    const updateAtlsCaseSelection = caseId => {
+      const selectedCase = atlsCasesById.get(caseId) || null;
+      if (atlsCasePreview) {
+        atlsCasePreview.classList.toggle('empty', !selectedCase);
+        atlsCasePreview.innerHTML = renderAtlsCasePreview(selectedCase);
+      }
+      if (loadAtlsCaseButton) {
+        loadAtlsCaseButton.disabled = !selectedCase;
+      }
+    };
+
+    atlsCaseSelect?.addEventListener('change', event => {
+      updateAtlsCaseSelection(event.target.value);
+    });
+
+    loadAtlsCaseButton?.addEventListener('click', () => {
+      const caseId = atlsCaseSelect?.value || '';
+      const selectedCase = atlsCasesById.get(caseId);
+      if (!selectedCase) {
+        if (atlsCaseStatus) {
+          atlsCaseStatus.textContent = 'Select a case before loading it.';
+        }
+        return;
+      }
+
+      const patient = selectedCase.patient || {};
+      const inferredCategory = inferPatientCategory(patient.age);
+      const vitalsPatch = buildAtlsVitalsPatch(selectedCase.initial_vitals);
+
+      App.state.applyPatientCategory(inferredCategory, { source: 'local' });
+      App.state.setState(
+        {
+          patientName: getSuggestedPatientName(patient.sex),
+          ...vitalsPatch
+        },
+        { source: 'local' }
+      );
+
+      if (atlsCaseStatus) {
+        atlsCaseStatus.textContent = `${selectedCase.id} loaded. ${inferredCategory} defaults applied, then initial vitals and patient name were updated.`;
+      }
+      setActiveTab('tabPatientControl');
+    });
+
+    loadAtlsDataset()
+      .then(dataset => {
+        atlsDataset = dataset;
+        const cases = Array.isArray(dataset?.cases) ? dataset.cases : [];
+        atlsCasesById = new Map(cases.map(caseData => [caseData.id, caseData]));
+
+        if (atlsCaseSelect) {
+          atlsCaseSelect.innerHTML = '<option value="">Select case...</option>';
+          (Array.isArray(dataset?.case_index) ? dataset.case_index : []).forEach(entry => {
+            const option = document.createElement('option');
+            option.value = entry.id;
+            option.textContent = `${entry.id} - ${entry.title}`;
+            atlsCaseSelect.appendChild(option);
+          });
+        }
+
+        const initialCaseId = dataset?.navigation?.entry_case_id || '';
+        if (atlsCaseSelect && initialCaseId && atlsCasesById.has(initialCaseId)) {
+          atlsCaseSelect.value = initialCaseId;
+        }
+        updateAtlsCaseSelection(atlsCaseSelect?.value || '');
+
+        if (atlsCaseStatus) {
+          atlsCaseStatus.textContent = `${atlsCasesById.size} ATLS cases available from ${ATLS_CASES_PATH}.`;
+        }
+      })
+      .catch(error => {
+        if (atlsCaseStatus) {
+          atlsCaseStatus.textContent = `ATLS cases could not be loaded from ${ATLS_CASES_PATH}: ${error.message}. If you are opening the app with file://, use a local server for JSON-backed case selection.`;
+        }
+        updateAtlsCaseSelection('');
+      });
 
     document.getElementById('showGrid')?.addEventListener('change', event => {
       App.state.setState({ showGrid: event.target.checked }, { source: 'local' });
@@ -225,6 +446,10 @@
         }
         if (document.getElementById('patientName')) {
           document.getElementById('patientName').value = nextState.patientName;
+        }
+        if (atlsDataset && atlsCasePreview && !atlsCasePreview.classList.contains('empty')) {
+          const selectedCase = atlsCasesById.get(atlsCaseSelect?.value || '');
+          atlsCasePreview.innerHTML = renderAtlsCasePreview(selectedCase || null);
         }
         if (document.getElementById('ecgGain')) {
           document.getElementById('ecgGain').value = String(nextState.ecgGain);

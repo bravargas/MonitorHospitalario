@@ -8,6 +8,7 @@
 
     const alarms = [];
     const limits = App.state.getPatientCategoryConfig(currentState).limits;
+    if (currentState.asystoleActive) alarms.push('Asystole');
     if (currentState.ecgLeadsOff) alarms.push('ECG leads off');
     if (currentState.spo2ProbeOff) alarms.push('SpO2 sensor disconnected');
     if (currentState.tempProbeOff) alarms.push('TEMP probe disconnected');
@@ -29,7 +30,7 @@
   }
 
   function isCriticalAlarm(alarms) {
-    return alarms.some(alarm => alarm.includes('Low SpO2') || alarm.includes('Hypotension'));
+    return alarms.some(alarm => alarm.includes('Asystole') || alarm.includes('Low SpO2') || alarm.includes('Hypotension'));
   }
 
   function getAlarmPriority(alarms) {

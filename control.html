@@ -16,6 +16,7 @@
         </div>
         <div class="page-actions">
           <span id="syncStatus" class="status-pill warning">Waiting for monitor</span>
+          <span id="alarmIndicator" class="status-pill ok">No alarms</span>
           <button id="btnStart" class="active">Pause</button>
           <button id="btnReset">Reset</button>
           <button id="btnOpenMonitor">Open monitor</button>
@@ -72,11 +73,11 @@
           <div class="control-top">
             <label for="alarmVolume">Alarm volume</label>
             <div class="value-box">
-              <input id="alarmVolumeNumber" type="number" min="0" max="100" step="1" value="50" />
+              <input id="alarmVolumeNumber" type="number" min="0" max="100" step="1" value="10" />
               <span class="unit">%</span>
             </div>
           </div>
-          <input id="alarmVolume" type="range" min="0" max="100" step="1" value="50" />
+          <input id="alarmVolume" type="range" min="0" max="100" step="1" value="10" />
         </div>
 
         <div class="control">
@@ -210,6 +211,7 @@
             <button id="btnStartTrend">Start event</button>
             <button id="btnStopTrend">Stop event</button>
             <button id="btnNibpNow">NIBP now</button>
+            <button id="btnAsystole">Start asystole</button>
           </div>
           <div id="trendStatus" class="note inline-note">No active event</div>
         </div>
@@ -260,6 +262,7 @@
   <script src="js/state.js"></script>
   <script src="js/waves.js"></script>
   <script src="js/alarms.js"></script>
+  <script src="js/audio-asset.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/controls.js"></script>

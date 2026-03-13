@@ -373,7 +373,7 @@
       const tempValue = currentState.temp.toFixed(1);
       const tempProbe2 = Math.max(30, Number((currentState.temp - 0.4).toFixed(1)));
       const tempDelta = Math.abs(currentState.temp - tempProbe2).toFixed(1);
-      const ecgValue = currentState.ecgLeadsOff ? '---' : String(currentState.hr);
+      const ecgValue = currentState.ecgLeadsOff ? '---' : (currentState.asystoleActive ? '0' : String(currentState.hr));
       const spo2Value = currentState.spo2ProbeOff ? '---' : String(currentState.spo2);
       const showTempOff = currentState.tempProbeOff;
       const diagnosticVisible = currentState.showDiagnostic;

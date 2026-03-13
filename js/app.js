@@ -12,6 +12,7 @@
   let previousEcgSweepSpeed = App.state.getState().ecgSweepSpeed;
   let previousEcgLeadsOff = App.state.getState().ecgLeadsOff;
   let previousSpo2ProbeOff = App.state.getState().spo2ProbeOff;
+  let previousAsystoleActive = App.state.getState().asystoleActive;
 
   function updateMonitorStatus(message, variant = 'warning') {
     const syncStatus = document.getElementById('syncStatus');
@@ -29,15 +30,16 @@
     }
 
     const currentState = App.state.getState();
-    indicator.classList.remove('connected', 'warning', 'danger', 'ok');
+    indicator.classList.remove('connected', 'warning', 'danger', 'ok', 'advisory', 'critical');
     if (currentState.activeAlarms.length === 0) {
       indicator.textContent = 'No alarms';
       indicator.classList.add('ok');
       return;
     }
 
-    indicator.textContent = currentState.activeAlarms[0];
-    indicator.classList.add(App.alarms.getAlarmPriority(currentState.activeAlarms));
+    indicator.textContent = 'Alarm active';
+    const priority = App.alarms.getAlarmPriority(currentState.activeAlarms);
+    indicator.classList.add(priority === 'critical' ? 'danger' : priority);
   }
 
   function refreshUi() {
@@ -85,6 +87,10 @@
     if (renderer && previousSpo2ProbeOff !== currentState.spo2ProbeOff) {
       renderer.clearTrace('pleth');
     }
+    if (renderer && previousAsystoleActive !== currentState.asystoleActive) {
+      clearEcgTraces();
+      renderer.clearTrace('channel2');
+    }
 
     previousPatientCategory = currentState.patientCategory;
     previousChannel2Type = currentState.channel2Type;
@@ -93,6 +99,7 @@
     previousEcgSweepSpeed = currentState.ecgSweepSpeed;
     previousEcgLeadsOff = currentState.ecgLeadsOff;
     previousSpo2ProbeOff = currentState.spo2ProbeOff;
+    previousAsystoleActive = currentState.asystoleActive;
     refreshUi();
 
     if (syncManager && pageType === 'control' && meta.source === 'local' && !meta.skipBroadcast) {

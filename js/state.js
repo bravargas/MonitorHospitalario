@@ -196,7 +196,8 @@
   const DEFAULT_STATE = {
     alarmsEnabled: true,
     soundEnabled: true,
-    alarmVolume: 0.5,
+    alarmVolume: 0.1,
+    asystoleActive: false,
     ecgLeadsOff: false,
     spo2ProbeOff: false,
     tempProbeOff: false,
@@ -283,7 +284,7 @@
       patch[key] = roundByStep(clamp(raw, min, max), step);
     });
 
-    ['alarmsEnabled', 'soundEnabled', 'running', 'showGrid', 'showDiagnostic', 'ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff'].forEach(key => {
+    ['alarmsEnabled', 'soundEnabled', 'running', 'showGrid', 'showDiagnostic', 'ecgLeadsOff', 'spo2ProbeOff', 'tempProbeOff', 'asystoleActive'].forEach(key => {
       if (key in input) {
         patch[key] = Boolean(input[key]);
       }
@@ -420,6 +421,7 @@
       alarmsEnabled: state.alarmsEnabled,
       soundEnabled: state.soundEnabled,
       alarmVolume: state.alarmVolume,
+      asystoleActive: state.asystoleActive,
       ecgLeadsOff: state.ecgLeadsOff,
       spo2ProbeOff: state.spo2ProbeOff,
       tempProbeOff: state.tempProbeOff,
@@ -472,6 +474,7 @@
         trendHoldMs: 0,
         trendHoldOverrideMs: 0,
         trendPhase: 'idle',
+        asystoleActive: false,
         nibpMeasurementActive: false,
         nibpMeasurementStartedAt: 0
       },
@@ -484,10 +487,32 @@
   function applyPatientCategory(name, meta = { source: 'local' }) {
     const category = PATIENT_CATEGORY_CONFIGS[name] ? name : DEFAULT_STATE.patientCategory;
     trendBaseline = null;
-    const changed = setState({ patientCategory: category, ...PATIENT_CATEGORY_CONFIGS[category].defaults }, meta);
+    const changed = setState({ patientCategory: category, asystoleActive: false, ...PATIENT_CATEGORY_CONFIGS[category].defaults }, meta);
     configureNibpSchedule(Date.now(), meta);
     stopTrend(meta, false);
     return changed;
+  }
+
+  function setAsystole(active, meta = { source: 'local' }) {
+    const nextActive = Boolean(active);
+    trendBaseline = null;
+
+    if (nextActive) {
+      return updateInternalState(
+        {
+          asystoleActive: true,
+          trendEvent: 'none',
+          trendRunning: false,
+          trendStartedAt: 0,
+          trendDurationMs: 0,
+          trendHoldMs: 0,
+          trendPhase: 'idle'
+        },
+        meta
+      );
+    }
+
+    return updateInternalState({ asystoleActive: false }, meta);
   }
 
   function mapPressureValue(currentState = state) {
@@ -820,6 +845,7 @@
     mapPressureValue,
     replaceState,
     sanitizePatch,
+    setAsystole,
     setState,
     startNibpMeasurement,
     startTrend,

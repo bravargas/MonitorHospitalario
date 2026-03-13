@@ -271,6 +271,7 @@
         const alarmBanner = document.getElementById('alarmBanner');
         const alarmText = document.getElementById('alarmText');
         const trendStatus = document.getElementById('trendStatus');
+        const nibpStatusElement = document.getElementById('nibpStatus');
         if (alarmBanner && alarmText) {
           if (nextState.activeAlarms.length === 0) {
             alarmBanner.style.display = 'none';
@@ -284,17 +285,36 @@
             alarmBanner.classList.toggle('danger', priority !== 'advisory');
           }
         }
-        if (trendStatus) {
+        if (trendStatus || nibpStatusElement) {
+          const now = Date.now();
+          const categoryDisplay = App.state.getPatientCategoryConfig(nextState).display;
+          const nibpMeasureMs = Math.max(1, categoryDisplay.nibpMeasureMs || 0);
+          const nibpStatus = nextState.nibpMeasurementActive
+            ? `NIBP measuring (${Math.max(0, Math.ceil((nibpMeasureMs - (now - nextState.nibpMeasurementStartedAt)) / 1000))}s)`
+            : categoryDisplay.nibpIntervalMs > 0
+              ? `Next auto NIBP in ${Math.max(0, Math.ceil((nextState.nibpNextMeasurementAt - now) / 1000))}s`
+              : 'NIBP manual';
+
+          if (nibpStatusElement) {
+            nibpStatusElement.textContent = nibpStatus;
+          }
+
           if (nextState.asystoleActive) {
-            trendStatus.textContent = 'Asystole active';
+            if (trendStatus) {
+              trendStatus.textContent = 'Asystole active';
+            }
           } else if (!nextState.trendRunning) {
-            trendStatus.textContent = 'No active event';
+            if (trendStatus) {
+              trendStatus.textContent = 'No active event';
+            }
           } else {
             const event = App.state.TREND_EVENTS[nextState.trendEvent];
-            const elapsed = Math.max(0, Date.now() - nextState.trendStartedAt);
+            const elapsed = Math.max(0, now - nextState.trendStartedAt);
             const totalMs = nextState.trendDurationMs + nextState.trendHoldMs + (event?.returnToBaseline === false ? 0 : nextState.trendDurationMs);
             const remaining = Math.max(0, Math.ceil((totalMs - elapsed) / 1000));
-            trendStatus.textContent = `${event?.label || 'Active event'} • ${App.state.getTrendProfileLabel(nextState.trendEvent)} • ${App.state.getTrendPhaseLabel(nextState.trendPhase)} • ${remaining}s remaining`;
+            if (trendStatus) {
+              trendStatus.textContent = `${event?.label || 'Active event'} • ${App.state.getTrendProfileLabel(nextState.trendEvent)} • ${App.state.getTrendPhaseLabel(nextState.trendPhase)} • ${remaining}s remaining`;
+            }
           }
         }
       },

@@ -2,6 +2,24 @@
 
 All notable changes to this hospital monitor simulator are documented in this file.
 
+## [1.1.0] - 2026-03-13
+
+### Added
+- Embedded NIBP inflation audio asset for offline use via `js/nibp-audio-asset.js`.
+- NIBP status line inside the monitor NIBP section with explicit phase text and timing.
+
+### Changed
+- ATLS case patient label generation no longer uses gender-based invented names.
+- ATLS patient label now uses `sex (age)` with `N/A` fallback when fields are missing.
+- NIBP phase logic is now split into separate phases:
+  - `Inflating`: duration follows the real NIBP audio clip length.
+  - `Measuring`: fixed independent 5-second phase.
+
+### Fixed
+- NIBP inflation sound playback now prioritizes embedded MP3 playback paths before synthetic fallback.
+- NIBP inflation audio no longer persists/restarts during `Measuring`.
+- NIBP UI/audio synchronization improved so phase transitions and sound behavior match expected workflow.
+
 ## [1.0.0] - 2026-03-13
 
 ### Added

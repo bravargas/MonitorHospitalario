@@ -1,5 +1,7 @@
 (() => {
   const App = (window.MonitorApp = window.MonitorApp || {});
+  const NIBP_INFLATION_FALLBACK_MS = 9000;
+  const NIBP_MEASURING_PHASE_MS = 5000;
 
   function createBuffer(length) {
     const values = new Float32Array(length);
@@ -379,15 +381,47 @@
       const diagnosticVisible = currentState.showDiagnostic;
       const nibpNow = Date.now();
       const nibpMeasuring = Boolean(currentState.nibpMeasurementActive);
-      const nibpProgress = nibpMeasuring
-        ? Math.min(1, Math.max(0, (nibpNow - currentState.nibpMeasurementStartedAt) / Math.max(1, display.nibpMeasureMs)))
+      const nibpMeasureMs = Math.max(1, display.nibpMeasureMs || 1);
+      const nibpElapsedMs = nibpMeasuring
+        ? Math.max(0, nibpNow - currentState.nibpMeasurementStartedAt)
         : 0;
-      const nibpSeconds = currentState.nibpNextMeasurementAt > nibpNow ? Math.ceil((currentState.nibpNextMeasurementAt - nibpNow) / 1000) : 0;
+      const nibpProgress = nibpMeasuring
+        ? Math.min(1, nibpElapsedMs / nibpMeasureMs)
+        : 0;
+      const nibpInflationWindowMs = Math.max(
+        800,
+        Number(App.audio?.getNibpInflationDurationMs?.()) || NIBP_INFLATION_FALLBACK_MS
+      );
+      const nibpInflatingProgress = nibpMeasuring
+        ? Math.min(1, nibpElapsedMs / nibpInflationWindowMs)
+        : 0;
+      const nibpIsInflatingPhase = nibpMeasuring && nibpInflatingProgress < 1;
+      const nibpMeasuringElapsedMs = nibpMeasuring
+        ? Math.max(0, nibpElapsedMs - nibpInflationWindowMs)
+        : 0;
+      const nibpIsMeasuringPhase = nibpMeasuring && !nibpIsInflatingPhase && nibpMeasuringElapsedMs < NIBP_MEASURING_PHASE_MS;
+      const nibpMeasuringElapsedSeconds = nibpIsMeasuringPhase
+        ? nibpMeasuringElapsedMs / 1000
+        : 0;
+      const nibpSeconds = currentState.nibpNextMeasurementAt > nibpNow
+        ? Math.ceil((currentState.nibpNextMeasurementAt - nibpNow) / 1000)
+        : display.nibpIntervalMs > 0
+          ? Math.ceil(display.nibpIntervalMs / 1000)
+          : 0;
       const nibpModeText = nibpMeasuring
-        ? `Inflating ${Math.round(nibpProgress * 100)}%`
+        ? nibpIsInflatingPhase
+          ? `Inflating ${Math.round(nibpInflatingProgress * 100)}%`
+          : nibpIsMeasuringPhase
+            ? `Measuring ${nibpMeasuringElapsedSeconds.toFixed(1)}s`
+            : 'Completing...'
         : display.nibpIntervalMs > 0
           ? `${display.nibpMode} • ${nibpSeconds}s`
           : display.nibpMode;
+      const nibpStatusText = nibpMeasuring
+        ? nibpModeText
+        : display.nibpIntervalMs > 0
+          ? `Next auto: ${nibpSeconds}s`
+          : 'Manual mode';
       const nibpValueText = nibpMeasuring ? '---/---' : `${currentState.sys}/${currentState.dia}`;
       const nibpMapText = nibpMeasuring ? '(---)' : `(${App.state.mapPressureValue(currentState)})`;
       const heartAge = Math.max(0, performance.now() - currentState.lastHeartBeatAt);
@@ -521,10 +555,7 @@
       
       drawText(nibpValueText, GRID_W + 14, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpValueSize);
       drawText(nibpMapText, GRID_W + 210, 550, nibpMeasuring ? '#d0d7e2' : '#f5f5f5', display.nibpMapSize, 'right');
-      // Only show mode text when actively measuring (inflating)
-      if (nibpMeasuring) {
-        drawText(nibpModeText, GRID_W + 14, 570, '#ffee00', isNeonate ? 14 : 16);
-      }
+      drawText(nibpStatusText, GRID_W + 14, 570, nibpMeasuring ? '#ffee00' : '#8fdcff', isNeonate ? 14 : 16);
       if (nibpMeasuring) {
         ctx.save();
         ctx.strokeStyle = '#ffee00';
@@ -533,7 +564,7 @@
         ctx.fillStyle = 'rgba(255, 238, 0, 0.18)';
         ctx.fillRect(GRID_W + 14, 580.5, 208, 8);
         ctx.fillStyle = '#ffee00';
-        ctx.fillRect(GRID_W + 14, 580.5, 208 * nibpProgress, 8);
+        ctx.fillRect(GRID_W + 14, 580.5, 208 * nibpInflatingProgress, 8);
         drawText('CUFF', GRID_W + 228, 591, '#ffee00', 10);
         ctx.restore();
       }

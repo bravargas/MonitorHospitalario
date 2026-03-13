@@ -1,9 +1,13 @@
 (() => {
   const App = (window.MonitorApp = window.MonitorApp || {});
+  const NIBP_INFLATION_FALLBACK_MS = 9000;
+  let sharedNibpInflationDurationMs = NIBP_INFLATION_FALLBACK_MS;
 
   function createAudioManager({ enabled = true } = {}) {
     const REFERENCE_AUDIO_PATH = 'audio/Icu.mp3';
     const REFERENCE_AUDIO_BASE64 = App.audioAssets?.referenceMp3Base64 || null;
+    const NIBP_AUDIO_PATH = 'audio/NIBP.mp3';
+    const NIBP_AUDIO_BASE64 = App.audioAssets?.nibpMp3Base64 || null;
     const OUTPUT_GAIN_BOOST = 7.5;
     const ASYSTOLE_TONE_VOLUME_SCALE = 0.016;
     const ASYSTOLE_TONE_MAX_GAIN = 0.11;
@@ -13,7 +17,6 @@
     let alarmPriority = 'none';
     let alarmPatternStep = 0;
     let nextAlarmToneAt = 0;
-    let nextNibpPumpAt = 0;
     let asystoleToneOsc = null;
     let asystoleToneGain = null;
     let referenceBuffer = null;
@@ -24,6 +27,17 @@
     let referenceStatus = 'idle';
     let referenceElement = null;
     let referenceElementReady = false;
+    let nibpBuffer = null;
+    let nibpCue = { startSec: 0, durationSec: NIBP_INFLATION_FALLBACK_MS / 1000 };
+    let nibpLoadPromise = null;
+    let nibpElement = null;
+    let nibpElementReady = false;
+    let nibpLoopSource = null;
+    let nibpLoopGain = null;
+    let nibpElementLoop = null;
+    let nibpPumpStartedAtMeasurement = 0;
+    let nibpPumpPlaybackLaunched = false;
+    let nibpInflationDurationMsActive = NIBP_INFLATION_FALLBACK_MS;
 
     // Pulse beep config is isolated so we can later enable SpO2 pitch mapping
     // without changing scheduler or monitor logic.
@@ -272,6 +286,92 @@
       referenceElement.load();
     }
 
+    function ensureNibpLoaded() {
+      const ctx = ensureContext();
+      if (!ctx || nibpBuffer || nibpLoadPromise) {
+        return nibpLoadPromise;
+      }
+
+      if (NIBP_AUDIO_BASE64) {
+        nibpLoadPromise = ctx.decodeAudioData(decodeBase64ToArrayBuffer(NIBP_AUDIO_BASE64))
+          .then(decodedBuffer => {
+            nibpBuffer = decodedBuffer;
+            nibpCue = {
+              startSec: 0,
+              durationSec: Math.max(0.8, Math.min(12, decodedBuffer.duration || 2.5))
+            };
+            sharedNibpInflationDurationMs = Math.round(nibpCue.durationSec * 1000);
+          })
+          .catch(() => {
+            nibpBuffer = null;
+            ensureNibpElementLoaded();
+          })
+          .finally(() => {
+            nibpLoadPromise = null;
+          });
+
+        return nibpLoadPromise;
+      }
+
+      nibpLoadPromise = fetch(NIBP_AUDIO_PATH, { cache: 'no-store' })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.arrayBuffer();
+        })
+        .then(arrayBuffer => ctx.decodeAudioData(arrayBuffer.slice(0)))
+        .then(decodedBuffer => {
+          nibpBuffer = decodedBuffer;
+          nibpCue = {
+            startSec: 0,
+            durationSec: Math.max(0.8, Math.min(12, decodedBuffer.duration || 2.5))
+          };
+          sharedNibpInflationDurationMs = Math.round(nibpCue.durationSec * 1000);
+        })
+        .catch(() => {
+          nibpBuffer = null;
+          ensureNibpElementLoaded();
+        })
+        .finally(() => {
+          nibpLoadPromise = null;
+        });
+
+      return nibpLoadPromise;
+    }
+
+    function ensureNibpElementLoaded() {
+      if (nibpElement) {
+        return;
+      }
+
+      const source = NIBP_AUDIO_BASE64 ? `data:audio/mpeg;base64,${NIBP_AUDIO_BASE64}` : NIBP_AUDIO_PATH;
+      nibpElement = new Audio(source);
+      nibpElement.preload = 'auto';
+
+      nibpElement.addEventListener(
+        'canplaythrough',
+        () => {
+          nibpElementReady = true;
+        },
+        { once: true }
+      );
+
+      nibpElement.addEventListener('loadedmetadata', () => {
+        nibpElementReady = true;
+        if (Number.isFinite(nibpElement.duration) && nibpElement.duration > 0) {
+          nibpCue.durationSec = Math.max(0.8, Math.min(12, nibpElement.duration));
+          sharedNibpInflationDurationMs = Math.round(nibpCue.durationSec * 1000);
+        }
+      });
+
+      nibpElement.addEventListener('error', () => {
+        nibpElementReady = false;
+      });
+
+      nibpElement.load();
+    }
+
     function playReferenceElementTone({ frequency, duration, volumeScale }) {
       const currentState = App.state.getState();
       if (!referenceElementReady || !referenceElement) {
@@ -360,6 +460,161 @@
       return true;
     }
 
+    function playNibpPumpSample() {
+      const currentState = App.state.getState();
+      const ctx = ensureContext();
+      if (!ctx || !currentState.soundEnabled || !nibpBuffer) {
+        return playNibpPumpElementTone();
+      }
+
+      const source = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      const sampleDuration = Math.max(0.05, Math.min(0.18, nibpCue.durationSec || 0.12));
+      const sampleStart = Math.max(0, nibpCue.startSec || 0);
+      const stopAt = ctx.currentTime + sampleDuration;
+      const peak = getOutputGain(currentState, 0.085, 0.95);
+      const attack = Math.min(0.004, sampleDuration * 0.2);
+      const release = Math.min(0.05, sampleDuration * 0.45);
+
+      source.buffer = nibpBuffer;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(peak, ctx.currentTime + attack);
+      gain.gain.setValueAtTime(peak, Math.max(ctx.currentTime + attack, stopAt - release));
+      gain.gain.exponentialRampToValueAtTime(0.0001, stopAt);
+
+      source.connect(gain);
+      gain.connect(getOutputDestination(ctx));
+      source.start(ctx.currentTime, sampleStart, Math.min(sampleDuration, Math.max(0.03, nibpBuffer.duration - sampleStart)));
+      source.stop(stopAt + 0.01);
+      return true;
+    }
+
+    function playNibpPumpElementTone() {
+      const currentState = App.state.getState();
+      if (!currentState.soundEnabled) {
+        return false;
+      }
+
+      if (!nibpElement) {
+        ensureNibpElementLoaded();
+      }
+
+      if (!nibpElement || !nibpElementReady) {
+        return false;
+      }
+
+      const clip = nibpElement.cloneNode();
+      const sampleDuration = Math.max(0.08, Math.min(0.22, nibpCue.durationSec || 0.12));
+      clip.preload = 'auto';
+      clip.volume = Math.max(0, Math.min(1, getOutputGain(currentState, 0.085, 1.0)));
+      clip.currentTime = Math.max(0, nibpCue.startSec || 0);
+      clip.play().catch(() => {});
+      window.setTimeout(() => {
+        clip.pause();
+        clip.removeAttribute('src');
+        clip.load();
+      }, Math.max(60, Math.round(sampleDuration * 1000) + 30));
+
+      return true;
+    }
+
+    function stopNibpPumpContinuous() {
+      if (nibpLoopSource && audioCtx) {
+        const now = audioCtx.currentTime;
+        if (nibpLoopGain) {
+          nibpLoopGain.gain.cancelScheduledValues(now);
+          nibpLoopGain.gain.setValueAtTime(Math.max(0.0001, nibpLoopGain.gain.value || 0.0001), now);
+          nibpLoopGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+        }
+        nibpLoopSource.stop(now + 0.06);
+      }
+
+      if (nibpElementLoop) {
+        nibpElementLoop.pause();
+        nibpElementLoop.removeAttribute('src');
+        nibpElementLoop.load();
+      }
+
+      nibpLoopSource = null;
+      nibpLoopGain = null;
+      nibpElementLoop = null;
+    }
+
+    function startNibpPumpContinuous(inflationDurationMs) {
+      const currentState = App.state.getState();
+      const ctx = ensureContext();
+      if (!ctx || !currentState.soundEnabled) {
+        stopNibpPumpContinuous();
+        return;
+      }
+
+      const phaseDurationSec = Math.max(0.8, (Number(inflationDurationMs) || NIBP_INFLATION_FALLBACK_MS) / 1000);
+
+      const peak = getOutputGain(currentState, 0.085, 0.95);
+
+      if (nibpLoopSource && nibpLoopGain) {
+        nibpLoopGain.gain.setTargetAtTime(peak, ctx.currentTime, 0.03);
+        return;
+      }
+
+      if (nibpElementLoop) {
+        nibpElementLoop.volume = Math.max(0, Math.min(1, getOutputGain(currentState, 0.085, 1.0)));
+        return;
+      }
+
+      if (nibpBuffer) {
+        const sampleStart = Math.max(0, nibpCue.startSec || 0);
+        const sampleDuration = Math.max(0.3, Math.min(phaseDurationSec, Math.max(0.3, nibpBuffer.duration - sampleStart)));
+
+        const source = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        source.buffer = nibpBuffer;
+        source.loop = false;
+
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(peak, ctx.currentTime + 0.03);
+        gain.gain.setValueAtTime(peak, ctx.currentTime + Math.max(0.03, sampleDuration - 0.06));
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + sampleDuration);
+
+        source.connect(gain);
+        gain.connect(getOutputDestination(ctx));
+        source.onended = () => {
+          if (nibpLoopSource === source) {
+            nibpLoopSource = null;
+            nibpLoopGain = null;
+          }
+        };
+        source.start(ctx.currentTime, sampleStart, sampleDuration);
+        source.stop(ctx.currentTime + sampleDuration + 0.01);
+
+        nibpLoopSource = source;
+        nibpLoopGain = gain;
+        return;
+      }
+
+      if (!nibpElement) {
+        ensureNibpElementLoaded();
+      }
+
+      if (nibpElement && nibpElementReady) {
+        const clip = nibpElement.cloneNode();
+        clip.preload = 'auto';
+        clip.loop = false;
+        clip.volume = Math.max(0, Math.min(1, getOutputGain(currentState, 0.085, 1.0)));
+        clip.currentTime = Math.max(0, nibpCue.startSec || 0);
+        clip.play().catch(() => {});
+        window.setTimeout(() => {
+          if (nibpElementLoop === clip) {
+            clip.pause();
+            clip.removeAttribute('src');
+            clip.load();
+            nibpElementLoop = null;
+          }
+        }, Math.round(phaseDurationSec * 1000) + 40);
+        nibpElementLoop = clip;
+      }
+    }
+
     function startAsystoleContinuousTone() {
       const currentState = App.state.getState();
       const ctx = ensureContext();
@@ -428,6 +683,8 @@
     function unlock() {
       ensureContext();
       ensureReferenceLoaded();
+      ensureNibpLoaded();
+      ensureNibpElementLoaded();
     }
 
     function getPulseFrequencyHz(currentState) {
@@ -476,7 +733,11 @@
     }
 
     function nibpPumpTone() {
-      // short mechanical thump: low sawtooth body + brief square click
+      if (playNibpPumpSample()) {
+        return;
+      }
+
+      // Fallback synthetic pump if sample is unavailable.
       playTone(92, 0.058, 0.10, 'sawtooth');
       playTone(215, 0.025, 0.05, 'square');
     }
@@ -520,10 +781,16 @@
       const currentState = App.state.getState();
       if (!enabled || !currentState.running) {
         stopAsystoleContinuousTone();
+        stopNibpPumpContinuous();
+        nibpPumpStartedAtMeasurement = 0;
         return;
       }
 
       ensureReferenceLoaded();
+      ensureNibpLoaded();
+      if (!nibpBuffer) {
+        ensureNibpElementLoaded();
+      }
 
       if (!currentState.asystoleActive) {
         stopAsystoleContinuousTone();
@@ -538,12 +805,28 @@
 
       // NIBP cuff inflation pump sound
       if (currentState.nibpMeasurementActive) {
-        if (now >= nextNibpPumpAt) {
-          nibpPumpTone();
-          nextNibpPumpAt = now + 780;
+        if (nibpPumpStartedAtMeasurement !== currentState.nibpMeasurementStartedAt) {
+          stopNibpPumpContinuous();
+          nibpPumpStartedAtMeasurement = currentState.nibpMeasurementStartedAt;
+          nibpPumpPlaybackLaunched = false;
+          nibpInflationDurationMsActive = Math.max(800, sharedNibpInflationDurationMs || NIBP_INFLATION_FALLBACK_MS);
+        }
+
+        const elapsedNibpMs = Math.max(0, now - currentState.nibpMeasurementStartedAt);
+        const inflationMs = nibpInflationDurationMsActive;
+
+        if (elapsedNibpMs < inflationMs) {
+          if (!nibpPumpPlaybackLaunched) {
+            startNibpPumpContinuous(inflationMs);
+            nibpPumpPlaybackLaunched = true;
+          }
+        } else {
+          stopNibpPumpContinuous();
         }
       } else {
-        nextNibpPumpAt = 0;
+        stopNibpPumpContinuous();
+        nibpPumpStartedAtMeasurement = 0;
+        nibpPumpPlaybackLaunched = false;
       }
 
       if (!currentState.alarmsEnabled || currentState.activeAlarms.length === 0) {
@@ -573,6 +856,9 @@
   }
 
   App.audio = {
-    createAudioManager
+    createAudioManager,
+    getNibpInflationDurationMs() {
+      return Math.max(800, sharedNibpInflationDurationMs || NIBP_INFLATION_FALLBACK_MS);
+    }
   };
 })();

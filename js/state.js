@@ -1,5 +1,7 @@
 (() => {
   const App = (window.MonitorApp = window.MonitorApp || {});
+  const NIBP_INFLATION_FALLBACK_MS = 9000;
+  const NIBP_MEASURING_PHASE_MS = 5000;
 
   const CHANNEL2_TYPES = ['cvp', 'art2', 'pap', 'icp', 'off'];
   const PATIENT_CATEGORIES = ['adult', 'pediatric', 'neonate'];
@@ -687,7 +689,11 @@
   function tickDynamicState(now = Date.now(), meta = { source: 'local' }) {
     let changed = false;
     const category = getPatientCategoryConfig(state);
-    const nibpMeasureMs = Math.max(1, category.display.nibpMeasureMs || 0);
+    const inflationMs = Math.max(
+      800,
+      Number(App.audio?.getNibpInflationDurationMs?.()) || NIBP_INFLATION_FALLBACK_MS
+    );
+    const nibpMeasureMs = Math.max(1, category.display.nibpMeasureMs || 0, inflationMs + NIBP_MEASURING_PHASE_MS);
 
     if (state.trendRunning && TREND_EVENTS[state.trendEvent]) {
       const event = TREND_EVENTS[state.trendEvent];

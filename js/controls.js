@@ -16,15 +16,16 @@
     return 'adult';
   }
 
-  function getSuggestedPatientName(sex) {
-    const normalized = String(sex || '').trim().toLowerCase();
-    if (['femenino', 'female', 'mujer'].includes(normalized)) {
-      return 'Sofia Martin';
-    }
-    if (['masculino', 'male', 'hombre'].includes(normalized)) {
-      return 'David Martin';
-    }
-    return 'Martin';
+  function normalizePatientText(value) {
+    const text = String(value ?? '').trim();
+    return text ? text : 'N/A';
+  }
+
+  function formatPatientDisplay(patient) {
+    const data = patient && typeof patient === 'object' ? patient : {};
+    const sex = normalizePatientText(data.sex);
+    const age = normalizePatientText(data.age);
+    return `${sex} (${age})`;
   }
 
   function parseBloodPressure(value) {
@@ -79,7 +80,7 @@
 
     return `
       <div class="case-preview-title">${caseData.id} - ${caseData.title}</div>
-      <div class="case-preview-line">Patient: ${getSuggestedPatientName(patient.sex)} • ${patient.age ?? '--'} years • ${patientCategory}</div>
+      <div class="case-preview-line">Patient: ${formatPatientDisplay(patient)} • ${patientCategory}</div>
       <div class="case-preview-line">Scenario: ${scenario.setting || 'N/A'} • ${scenario.chief_complaint || 'No complaint listed'}</div>
       <div class="case-preview-line">Initial vitals: HR ${initialVitals.heart_rate_bpm ?? '--'} bpm • BP ${bloodPressure} mmHg • RESP ${initialVitals.respiratory_rate_bpm ?? '--'} rpm • SpO2 ${initialVitals.spo2_percent ?? '--'}% • Temp ${initialVitals.temperature_c ?? '--'} C • GCS ${gcs}</div>
     `;
@@ -223,7 +224,7 @@
       App.state.applyPatientCategory(inferredCategory, { source: 'local' });
       App.state.setState(
         {
-          patientName: getSuggestedPatientName(patient.sex),
+          patientName: formatPatientDisplay(patient),
           ...vitalsPatch
         },
         { source: 'local' }
